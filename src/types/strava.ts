@@ -72,6 +72,7 @@ export interface FormattedRide {
   achievements: number;
   polyline: string;
   mapImageUrl: string;
+  stravaUrl: string;
 }
 
 export interface FormattedFeaturedRide extends FormattedRide {

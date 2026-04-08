@@ -10,8 +10,13 @@ export default function FeaturedRide({ ride }: Props) {
     <section className="pt-28 pb-16 px-6">
       <div className="max-w-[1200px] mx-auto">
         {/* Route Map */}
-        {ride.largeMapImageUrl ? (
-          <div className="relative w-full aspect-[2/1] rounded-2xl overflow-hidden border border-border shadow-lg mb-8">
+        <a
+          href={ride.stravaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block relative w-full aspect-[2/1] rounded-2xl overflow-hidden border border-border shadow-lg mb-8 hover:shadow-xl transition-shadow"
+        >
+          {ride.largeMapImageUrl ? (
             <Image
               src={ride.largeMapImageUrl}
               alt={`Route map: ${ride.name}`}
@@ -20,12 +25,12 @@ export default function FeaturedRide({ ride }: Props) {
               priority
               unoptimized
             />
-          </div>
-        ) : (
-          <div className="w-full aspect-[2/1] rounded-2xl bg-gradient-to-br from-surface to-border mb-8 flex items-center justify-center">
-            <span className="text-mist text-sm">Route map</span>
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-surface to-border flex items-center justify-center">
+              <span className="text-mist text-sm">Route map</span>
+            </div>
+          )}
+        </a>
 
         {/* Ride Header */}
         <div className="mb-8">
@@ -35,9 +40,22 @@ export default function FeaturedRide({ ride }: Props) {
             </span>
             <span className="text-xs text-mist">{ride.date}</span>
           </div>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text">
+          <a
+            href={ride.stravaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text hover:text-strava transition-colors no-underline"
+          >
             {ride.name}
-          </h1>
+          </a>
+          <a
+            href={ride.stravaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-3 text-sm font-medium text-strava hover:underline"
+          >
+            View on Strava &rarr;
+          </a>
         </div>
 
         {/* Metrics Grid */}

@@ -7,7 +7,12 @@ interface Props {
 
 export default function StravaCard({ ride }: Props) {
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all overflow-hidden">
+    <a
+      href={ride.stravaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-card border border-border rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all overflow-hidden no-underline"
+    >
       {/* Mini Map */}
       {ride.mapImageUrl ? (
         <div className="relative w-full aspect-[2/1]">
@@ -81,7 +86,12 @@ export default function StravaCard({ ride }: Props) {
             <span className="ml-auto">{ride.calories.toLocaleString()} cal</span>
           )}
         </div>
+
+        {/* View on Strava link */}
+        <div className="mt-3 text-xs font-medium text-strava">
+          View on Strava &rarr;
+        </div>
       </div>
-    </div>
+    </a>
   );
 }

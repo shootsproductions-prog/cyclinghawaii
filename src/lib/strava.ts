@@ -82,15 +82,81 @@ async function getActivityPhotos(
   return res.json();
 }
 
-function buildMapImageUrl(
+function decodePolyline(encoded: string): [number, number][] {
+  const points: [number, number][] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte: number;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  return points;
+}
+
+export function buildMapSvg(
   polyline: string,
   width: number,
   height: number
 ): string {
+  if (!polyline) return "";
+  const points = decodePolyline(polyline);
+  if (points.length < 2) return "";
+
+  const lats = points.map((p) => p[0]);
+  const lngs = points.map((p) => p[1]);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+
+  const pad = 0.1;
+  const rangeX = maxLng - minLng || 0.001;
+  const rangeY = maxLat - minLat || 0.001;
+
+  const svgPoints = points
+    .map((p) => {
+      const x = ((p[1] - minLng) / rangeX) * (1 - 2 * pad) + pad;
+      const y = (1 - (p[0] - minLat) / rangeY) * (1 - 2 * pad) + pad;
+      return `${(x * width).toFixed(1)},${(y * height).toFixed(1)}`;
+    })
+    .join(" ");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><rect width="${width}" height="${height}" fill="#f5f5f5"/><polyline points="${svgPoints}" fill="none" stroke="#fc5200" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function buildMapImageUrl(polyline: string, width: number, height: number): string {
+  // Try Mapbox first
   const token = process.env.MAPBOX_TOKEN;
-  if (!token || !polyline) return "";
-  const encoded = encodeURIComponent(polyline);
-  return `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/path-3+fc5200-0.8(${encoded})/auto/${width}x${height}@2x?access_token=${token}&padding=40`;
+  if (token && polyline) {
+    const encoded = encodeURIComponent(polyline);
+    return `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/path-3+fc5200-0.8(${encoded})/auto/${width}x${height}@2x?access_token=${token}&padding=40`;
+  }
+  // Fallback: inline SVG as data URI
+  if (polyline) {
+    const svg = buildMapSvg(polyline, width, height);
+    if (svg) return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+  return "";
 }
 
 function formatActivity(ride: StravaActivity, maxElev: number): FormattedRide {
@@ -115,6 +181,7 @@ function formatActivity(ride: StravaActivity, maxElev: number): FormattedRide {
       400,
       200
     ),
+    stravaUrl: `https://www.strava.com/activities/${ride.id}`,
   };
 }
 
@@ -194,6 +261,7 @@ function getFallbackData(): StravaData {
     achievements: 5,
     polyline: "",
     mapImageUrl: "",
+    stravaUrl: "#",
   };
 
   return {
