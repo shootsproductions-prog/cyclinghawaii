@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-black: #0a0a0a;
+  --color-volcanic: #1a1a1a;
+  --color-basalt: #252525;
+  --color-lava: #333333;
+  --color-ocean-deep: #0c2d48;
+  --color-ocean: #1a6b8a;
+  --color-ocean-light: #2aa5c4;
+  --color-lagoon: #40e0d0;
+  --color-fern: #2d6a4f;
+  --color-jungle: #40916c;
+  --color-jungle-light: #52b788;
+  --color-sand: #d4a373;
+  --color-white: #f0f0f0;
+  --color-mist: #b0b0b0;
+  --color-ash: #777777;
+  --color-strava: #fc5200;
+  --color-strava-light: #ff8c00;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-black);
+  color: var(--color-white);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Float animation for scroll indicator */
+@keyframes float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+/* Strava elevation bar fill animation */
+@keyframes fillBar {
+  from { width: 0; }
+}
+
+/* Fade-in on scroll */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
