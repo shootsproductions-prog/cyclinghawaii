@@ -37,7 +37,7 @@ export default function About() {
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(135deg, #0c2d48 0%, #2d6a4f 50%, #1a6b8a 100%)",
+                "linear-gradient(135deg, #1a1a1a 0%, #3d2000 50%, #1a1a1a 100%)",
             }}
           />
           <div className="absolute inset-0 flex items-center justify-center">

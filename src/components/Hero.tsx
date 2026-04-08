@@ -20,7 +20,7 @@ export default function Hero() {
       <div
         className="absolute inset-0 opacity-60"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 450 Q150 380 300 420 Q450 460 600 400 Q750 340 900 390 Q1050 440 1200 380 L1200 600 L0 600Z' fill='%231a6b8a' opacity='0.08'/%3E%3Cpath d='M0 480 Q200 430 400 470 Q600 510 800 440 Q1000 370 1200 430 L1200 600 L0 600Z' fill='%232aa5c4' opacity='0.05'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 450 Q150 380 300 420 Q450 460 600 400 Q750 340 900 390 Q1050 440 1200 380 L1200 600 L0 600Z' fill='%23d97706' opacity='0.06'/%3E%3Cpath d='M0 480 Q200 430 400 470 Q600 510 800 440 Q1000 370 1200 430 L1200 600 L0 600Z' fill='%23f59e0b' opacity='0.04'/%3E%3C/svg%3E")`,
           backgroundPosition: "center bottom",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
@@ -38,14 +38,14 @@ export default function Hero() {
           priority
         />
 
-        <div className="inline-block text-xs font-semibold tracking-[0.15em] uppercase text-ocean-light mb-6 px-4 py-1.5 border border-ocean-light/30 rounded-full">
+        <div className="inline-block text-xs font-semibold tracking-[0.15em] uppercase text-brand-light mb-6 px-4 py-1.5 border border-brand/30 rounded-full">
           Maui &middot; Big Island &middot; Oahu &middot; Kauai
         </div>
 
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-[clamp(3rem,8vw,6.5rem)] font-bold tracking-tighter leading-[1.05] mb-6">
           Cycling
           <br />
-          <span className="bg-gradient-to-br from-ocean-light to-lagoon bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-brand to-brand-light bg-clip-text text-transparent">
             Hawaii
           </span>
         </h1>
@@ -57,7 +57,7 @@ export default function Hero() {
 
         <a
           href="#tracker"
-          className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-br from-ocean to-ocean-light text-white font-semibold text-sm rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(42,165,196,0.3)]"
+          className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-br from-brand-deep to-brand text-white font-semibold text-sm rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(217,119,6,0.3)]"
         >
           <svg
             width="16"

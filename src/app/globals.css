@@ -16,6 +16,9 @@
   --color-white: #f0f0f0;
   --color-mist: #b0b0b0;
   --color-ash: #777777;
+  --color-brand: #d97706;
+  --color-brand-light: #f59e0b;
+  --color-brand-deep: #b45309;
   --color-strava: #fc5200;
   --color-strava-light: #ff8c00;
 
@@ -56,4 +59,15 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Scroll-triggered section fade */
+.fade-section {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.fade-section.visible {
+  opacity: 1;
+  transform: translateY(0);
 }

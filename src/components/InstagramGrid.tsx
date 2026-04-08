@@ -59,7 +59,7 @@ export default function InstagramGrid() {
           href="https://instagram.com/cyclinghawaii"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-ocean-light font-semibold text-sm hover:text-lagoon transition-colors"
+          className="text-brand font-semibold text-sm hover:text-brand-light transition-colors"
         >
           Follow @cyclinghawaii &rarr;
         </a>

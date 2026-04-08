@@ -33,7 +33,7 @@ export default function Nav() {
           className="rounded-full"
         />
         <span className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold tracking-tight text-white">
-          CYCLING<span className="text-ocean-light">HAWAII</span>
+          CYCLING<span className="text-brand">HAWAII</span>
         </span>
       </a>
 
@@ -51,6 +51,7 @@ export default function Nav() {
           { href: "#instagram", label: "Instagram" },
           { href: "#strava", label: "Strava" },
           { href: "#partners", label: "Partners" },
+          { href: "/brand", label: "Brand" },
         ].map((link) => (
           <li key={link.href}>
             <a
