@@ -17,6 +17,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://cyclinghawaii.com"),
   title: "Cycling Hawaii — Ride the Islands",
   description:
     "Exploring Hawaii on two wheels. Live ride tracking, routes, and stories from Maui, Big Island, Oahu, and Kauai.",
@@ -29,6 +30,10 @@ export const metadata: Metadata = {
     "haleakala",
     "strava",
   ],
+  icons: {
+    icon: "/favicon-32.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Cycling Hawaii — Ride the Islands",
     description:
@@ -37,12 +42,14 @@ export const metadata: Metadata = {
     siteName: "Cycling Hawaii",
     locale: "en_US",
     type: "website",
+    images: [{ url: "/logo-orange-full.png", width: 1600, height: 1600 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cycling Hawaii — Ride the Islands",
     description:
       "Exploring Hawaii on two wheels. Live ride tracking, routes, and stories from the islands.",
+    images: ["/logo-orange-full.png"],
   },
 };
 

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function Hero() {
   return (
     <section className="relative h-screen min-h-[600px] flex items-center justify-center text-center overflow-hidden">
@@ -27,6 +29,15 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 max-w-[800px] px-8">
+        <Image
+          src="/logo-orange.png"
+          alt="Cycling Hawaii Logo"
+          width={120}
+          height={120}
+          className="mx-auto mb-8 drop-shadow-[0_0_40px_rgba(218,119,13,0.3)]"
+          priority
+        />
+
         <div className="inline-block text-xs font-semibold tracking-[0.15em] uppercase text-ocean-light mb-6 px-4 py-1.5 border border-ocean-light/30 rounded-full">
           Maui &middot; Big Island &middot; Oahu &middot; Kauai
         </div>

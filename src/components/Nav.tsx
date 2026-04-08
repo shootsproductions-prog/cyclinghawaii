@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -22,9 +23,18 @@ export default function Nav() {
     >
       <a
         href="#"
-        className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold tracking-tight text-white no-underline"
+        className="flex items-center gap-3 no-underline"
       >
-        CYCLING<span className="text-ocean-light">HAWAII</span>
+        <Image
+          src="/logo-white.png"
+          alt="Cycling Hawaii"
+          width={36}
+          height={36}
+          className="rounded-full"
+        />
+        <span className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold tracking-tight text-white">
+          CYCLING<span className="text-ocean-light">HAWAII</span>
+        </span>
       </a>
 
       {/* Desktop links */}
