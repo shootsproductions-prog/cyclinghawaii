@@ -1,59 +1,86 @@
+import Image from "next/image";
 import { FormattedRide } from "@/types/strava";
 
-interface StravaCardProps {
+interface Props {
   ride: FormattedRide;
 }
 
-export default function StravaCard({ ride }: StravaCardProps) {
+export default function StravaCard({ ride }: Props) {
   return (
-    <div className="bg-basalt border border-white/5 rounded-[14px] p-6 transition-all hover:border-strava/30 hover:-translate-y-1">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <span className="text-[0.7rem] font-semibold tracking-widest uppercase text-strava">
-          {ride.type}
-        </span>
-        <span className="text-xs text-mist">{ride.date}</span>
-      </div>
+    <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all overflow-hidden">
+      {/* Mini Map */}
+      {ride.mapImageUrl ? (
+        <div className="relative w-full aspect-[2/1]">
+          <Image
+            src={ride.mapImageUrl}
+            alt={`Route: ${ride.name}`}
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+      ) : (
+        <div className="w-full aspect-[2/1] bg-surface" />
+      )}
 
-      {/* Title */}
-      <h3 className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold mb-4">
-        {ride.name}
-      </h3>
+      {/* Card Body */}
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-[0.7rem] font-semibold tracking-widest uppercase text-strava">
+            {ride.type}
+          </span>
+          <span className="text-xs text-mist">{ride.date}</span>
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
-            {ride.distance}
+        <h3 className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-text mb-3">
+          {ride.name}
+        </h3>
+
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div>
+            <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-text">
+              {ride.distance}
+            </div>
+            <div className="text-[0.65rem] text-mist uppercase tracking-wider">
+              Miles
+            </div>
           </div>
-          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
-            Miles
+          <div>
+            <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-text">
+              {ride.time}
+            </div>
+            <div className="text-[0.65rem] text-mist uppercase tracking-wider">
+              Time
+            </div>
+          </div>
+          <div>
+            <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-text">
+              {ride.elevation}
+            </div>
+            <div className="text-[0.65rem] text-mist uppercase tracking-wider">
+              Elev (ft)
+            </div>
           </div>
         </div>
-        <div>
-          <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
-            {ride.time}
-          </div>
-          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
-            Time
-          </div>
-        </div>
-        <div>
-          <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
-            {ride.elevation}
-          </div>
-          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
-            Elev (ft)
-          </div>
-        </div>
-      </div>
 
-      {/* Elevation bar */}
-      <div className="mt-4 h-1 bg-basalt rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-brand to-strava"
-          style={{ width: `${ride.elevationPct}%` }}
-        />
+        {/* Engagement */}
+        <div className="flex items-center gap-4 text-xs text-mist pt-3 border-t border-border">
+          <span className="flex items-center gap-1">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path d="M14 9V5a3 3 0 00-6 0v4M5 11h14l-1 9H6l-1-9z" />
+            </svg>
+            {ride.kudos}
+          </span>
+          <span className="flex items-center gap-1">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+            {ride.comments}
+          </span>
+          {ride.calories > 0 && (
+            <span className="ml-auto">{ride.calories.toLocaleString()} cal</span>
+          )}
+        </div>
       </div>
     </div>
   );

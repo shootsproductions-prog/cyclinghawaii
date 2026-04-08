@@ -11,7 +11,7 @@ const placeholders = [
 
 export default function Partners() {
   return (
-    <section id="partners" className="py-24 px-8 bg-volcanic">
+    <section id="partners" className="py-20 px-6 bg-surface">
       <SectionHeader
         label="Partners"
         title="Ride With Us"
@@ -22,9 +22,9 @@ export default function Partners() {
         {placeholders.map((name) => (
           <div
             key={name}
-            className="flex items-center justify-center h-28 rounded-xl border border-dashed border-white/10 bg-basalt/50 transition-all hover:border-brand/30 hover:bg-basalt"
+            className="flex items-center justify-center h-28 rounded-xl border border-dashed border-border bg-card transition-all hover:border-brand/40 hover:shadow-sm"
           >
-            <span className="text-sm text-mist/60 font-medium">{name}</span>
+            <span className="text-sm text-mist/50 font-medium">{name}</span>
           </div>
         ))}
       </div>
@@ -36,7 +36,7 @@ export default function Partners() {
         </p>
         <a
           href="mailto:hello@cyclinghawaii.com"
-          className="inline-flex items-center gap-2 px-6 py-3 border border-brand/40 text-brand font-semibold text-sm rounded-lg transition-all hover:bg-brand/10 hover:border-brand/60"
+          className="inline-flex items-center gap-2 px-6 py-3 border border-brand/40 text-brand font-semibold text-sm rounded-lg transition-all hover:bg-brand/5 hover:border-brand/60"
         >
           <svg
             width="16"

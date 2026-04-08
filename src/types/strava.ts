@@ -11,14 +11,23 @@ export interface StravaActivity {
   name: string;
   type: string;
   sport_type: string;
-  distance: number; // meters
-  moving_time: number; // seconds
-  elapsed_time: number; // seconds
-  total_elevation_gain: number; // meters
-  start_date: string; // ISO 8601
-  start_date_local: string; // ISO 8601
-  average_speed: number; // m/s
-  max_speed: number; // m/s
+  distance: number;
+  moving_time: number;
+  elapsed_time: number;
+  total_elevation_gain: number;
+  start_date: string;
+  start_date_local: string;
+  average_speed: number;
+  max_speed: number;
+  kudos_count: number;
+  comment_count: number;
+  photo_count: number;
+  achievement_count: number;
+  calories: number;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  average_watts?: number;
+  suffer_score?: number;
   map: {
     id: string;
     summary_polyline: string;
@@ -33,22 +42,41 @@ export interface StravaAthleteStats {
 
 export interface StravaTotals {
   count: number;
-  distance: number; // meters
-  moving_time: number; // seconds
-  elapsed_time: number; // seconds
-  elevation_gain: number; // meters
+  distance: number;
+  moving_time: number;
+  elapsed_time: number;
+  elevation_gain: number;
+}
+
+export interface StravaPhoto {
+  unique_id: string;
+  urls: Record<string, string>;
+  caption: string;
+  source: number;
 }
 
 export interface FormattedRide {
   id: number;
   name: string;
   type: string;
-  distance: string; // "36.2"
-  time: string; // "1:48"
-  elevation: string; // "9,740"
-  date: string; // "Apr 4, 2026"
-  elevationPct: number; // 0-100 for progress bar
-  averageSpeed: string; // "18.4"
+  distance: string;
+  time: string;
+  elevation: string;
+  date: string;
+  elevationPct: number;
+  averageSpeed: string;
+  kudos: number;
+  comments: number;
+  calories: number;
+  avgHeartrate?: number;
+  achievements: number;
+  polyline: string;
+  mapImageUrl: string;
+}
+
+export interface FormattedFeaturedRide extends FormattedRide {
+  photos: StravaPhoto[];
+  largeMapImageUrl: string;
 }
 
 export interface FormattedStats {
@@ -56,4 +84,10 @@ export interface FormattedStats {
   totalRides: string;
   totalElevation: string;
   avgSpeed: string;
+}
+
+export interface StravaData {
+  featured: FormattedFeaturedRide;
+  rides: FormattedRide[];
+  stats: FormattedStats;
 }

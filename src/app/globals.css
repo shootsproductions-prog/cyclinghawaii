@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-black: #0a0a0a;
-  --color-volcanic: #141414;
-  --color-basalt: #1e1e1e;
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f5;
+  --color-card: #ffffff;
+  --color-text: #1a1a1a;
+  --color-mist: #666666;
+  --color-border: #e5e5e5;
   --color-brand: #b45309;
   --color-strava: #fc5200;
-  --color-white: #f0f0f0;
-  --color-mist: #a0a0a0;
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-space-grotesk);
@@ -18,8 +19,8 @@ html {
 }
 
 body {
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-sans), system-ui, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

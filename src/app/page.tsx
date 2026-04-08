@@ -1,24 +1,24 @@
-import Hero from "@/components/Hero";
-import About from "@/components/About";
-import StravaRides from "@/components/StravaRides";
+import { getStravaData } from "@/lib/strava";
+import FeaturedRide from "@/components/FeaturedRide";
+import StravaFeed from "@/components/StravaFeed";
 import LiveTracker from "@/components/LiveTracker";
 import InstagramGrid from "@/components/InstagramGrid";
+import YouTubePlaylist from "@/components/YouTubePlaylist";
 import Partners from "@/components/Partners";
 import FadeIn from "@/components/FadeIn";
 import Divider from "@/components/Divider";
 
 export const revalidate = 3600;
 
-export default function Home() {
+export default async function Home() {
+  const { featured, rides, stats } = await getStravaData();
+
   return (
     <main>
-      <Hero />
-      <FadeIn>
-        <About />
-      </FadeIn>
+      <FeaturedRide ride={featured} />
       <Divider />
       <FadeIn>
-        <StravaRides />
+        <StravaFeed rides={rides} stats={stats} />
       </FadeIn>
       <Divider />
       <FadeIn>
@@ -27,6 +27,10 @@ export default function Home() {
       <Divider />
       <FadeIn>
         <InstagramGrid />
+      </FadeIn>
+      <Divider />
+      <FadeIn>
+        <YouTubePlaylist />
       </FadeIn>
       <Divider />
       <FadeIn>

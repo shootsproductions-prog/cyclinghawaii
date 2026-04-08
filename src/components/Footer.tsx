@@ -2,19 +2,18 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="py-12 px-8 text-center border-t border-white/5">
+    <footer className="py-12 px-8 text-center border-t border-border">
       <Image
-        src="/logo-white.png"
+        src="/logo-orange.png"
         alt="Cycling Hawaii"
         width={48}
         height={48}
-        className="mx-auto mb-4 opacity-60"
+        className="mx-auto mb-4"
       />
-      <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-lg mb-3">
-        CYCLING<span className="text-brand">HAWAII</span>
+      <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-lg mb-3 text-text">
+        CYCLING<span className="text-strava">HAWAII</span>
       </div>
 
-      {/* Social links */}
       <div className="flex items-center justify-center gap-5 mb-4">
         <a
           href="https://instagram.com/cyclinghawaii"

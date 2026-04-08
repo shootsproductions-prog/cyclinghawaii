@@ -2,8 +2,11 @@ import {
   StravaTokenResponse,
   StravaActivity,
   StravaAthleteStats,
+  StravaPhoto,
   FormattedRide,
+  FormattedFeaturedRide,
   FormattedStats,
+  StravaData,
 } from "@/types/strava";
 import {
   formatDistance,
@@ -13,7 +16,6 @@ import {
   formatSpeed,
   metersToFeet,
   metersToMiles,
-  mpsToMph,
 } from "./formatters";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -46,19 +48,13 @@ async function getAccessToken(): Promise<string> {
 
 async function getRecentActivities(
   token: string,
-  count: number = 6
+  count: number = 10
 ): Promise<StravaActivity[]> {
   const res = await fetch(
     `${STRAVA_API_BASE}/athlete/activities?per_page=${count}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
-
-  if (!res.ok) {
-    throw new Error(`Strava activities fetch failed: ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(`Strava activities fetch failed: ${res.status}`);
   return res.json();
 }
 
@@ -68,28 +64,37 @@ async function getAthleteStats(
 ): Promise<StravaAthleteStats> {
   const res = await fetch(
     `${STRAVA_API_BASE}/athletes/${athleteId}/stats`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
-
-  if (!res.ok) {
-    throw new Error(`Strava stats fetch failed: ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(`Strava stats fetch failed: ${res.status}`);
   return res.json();
 }
 
-function formatActivities(activities: StravaActivity[]): FormattedRide[] {
-  // Filter to rides only
-  const rides = activities.filter(
-    (a) => a.type === "Ride" || a.sport_type === "Ride"
+async function getActivityPhotos(
+  token: string,
+  activityId: number
+): Promise<StravaPhoto[]> {
+  const res = await fetch(
+    `${STRAVA_API_BASE}/activities/${activityId}/photos?size=600&photo_sources=true`,
+    { headers: { Authorization: `Bearer ${token}` } }
   );
+  if (!res.ok) return [];
+  return res.json();
+}
 
-  // Find max elevation for percentage calculation
-  const maxElev = Math.max(...rides.map((r) => r.total_elevation_gain), 1);
+function buildMapImageUrl(
+  polyline: string,
+  width: number,
+  height: number
+): string {
+  const token = process.env.MAPBOX_TOKEN;
+  if (!token || !polyline) return "";
+  const encoded = encodeURIComponent(polyline);
+  return `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/path-3+fc5200-0.8(${encoded})/auto/${width}x${height}@2x?access_token=${token}&padding=40`;
+}
 
-  return rides.map((ride) => ({
+function formatActivity(ride: StravaActivity, maxElev: number): FormattedRide {
+  return {
     id: ride.id,
     name: ride.name,
     type: ride.type,
@@ -99,7 +104,26 @@ function formatActivities(activities: StravaActivity[]): FormattedRide[] {
     date: formatDate(ride.start_date_local),
     elevationPct: Math.round((ride.total_elevation_gain / maxElev) * 100),
     averageSpeed: formatSpeed(ride.average_speed),
-  }));
+    kudos: ride.kudos_count || 0,
+    comments: ride.comment_count || 0,
+    calories: ride.calories || 0,
+    avgHeartrate: ride.average_heartrate,
+    achievements: ride.achievement_count || 0,
+    polyline: ride.map?.summary_polyline || "",
+    mapImageUrl: buildMapImageUrl(
+      ride.map?.summary_polyline || "",
+      400,
+      200
+    ),
+  };
+}
+
+function formatActivities(activities: StravaActivity[]): FormattedRide[] {
+  const rides = activities.filter(
+    (a) => a.type === "Ride" || a.sport_type === "Ride"
+  );
+  const maxElev = Math.max(...rides.map((r) => r.total_elevation_gain), 1);
+  return rides.map((ride) => formatActivity(ride, maxElev));
 }
 
 function formatStats(stats: StravaAthleteStats): FormattedStats {
@@ -117,13 +141,7 @@ function formatStats(stats: StravaAthleteStats): FormattedStats {
   };
 }
 
-export interface StravaData {
-  rides: FormattedRide[];
-  stats: FormattedStats;
-}
-
 export async function getStravaData(): Promise<StravaData> {
-  // Check if env vars are configured
   if (
     !process.env.STRAVA_CLIENT_ID ||
     !process.env.STRAVA_CLIENT_SECRET ||
@@ -137,19 +155,31 @@ export async function getStravaData(): Promise<StravaData> {
   try {
     const token = await getAccessToken();
     const [activities, athleteStats] = await Promise.all([
-      getRecentActivities(token, 6),
+      getRecentActivities(token, 10),
       getAthleteStats(token, process.env.STRAVA_ATHLETE_ID!),
     ]);
 
-    const rides = formatActivities(activities);
+    const allRides = formatActivities(activities);
+    if (allRides.length === 0) return getFallbackData();
+
     const stats = formatStats(athleteStats);
 
-    // If no rides found, use fallback
-    if (rides.length === 0) {
-      return getFallbackData();
+    // Featured ride = first ride, with photos and large map
+    const featuredBase = allRides[0];
+    let photos: StravaPhoto[] = [];
+    try {
+      photos = await getActivityPhotos(token, featuredBase.id);
+    } catch {
+      // Photos are optional
     }
 
-    return { rides, stats };
+    const featured: FormattedFeaturedRide = {
+      ...featuredBase,
+      photos,
+      largeMapImageUrl: buildMapImageUrl(featuredBase.polyline, 800, 400),
+    };
+
+    return { featured, rides: allRides.slice(1), stats };
   } catch (error) {
     console.error("Strava API error, using fallback data:", error);
     return getFallbackData();
@@ -157,19 +187,31 @@ export async function getStravaData(): Promise<StravaData> {
 }
 
 function getFallbackData(): StravaData {
+  const fallbackRide = {
+    kudos: 12,
+    comments: 3,
+    calories: 1850,
+    achievements: 5,
+    polyline: "",
+    mapImageUrl: "",
+  };
+
   return {
+    featured: {
+      id: 1,
+      name: "Haleakala Sunrise Bomb",
+      type: "Ride",
+      distance: "36.2",
+      time: "1:48",
+      elevation: "9,740",
+      date: "Apr 4, 2026",
+      elevationPct: 92,
+      averageSpeed: "20.1",
+      ...fallbackRide,
+      photos: [],
+      largeMapImageUrl: "",
+    },
     rides: [
-      {
-        id: 1,
-        name: "Haleakala Sunrise Bomb",
-        type: "Ride",
-        distance: "36.2",
-        time: "1:48",
-        elevation: "9,740",
-        date: "Apr 4, 2026",
-        elevationPct: 92,
-        averageSpeed: "20.1",
-      },
       {
         id: 2,
         name: "West Maui Loop",
@@ -180,6 +222,7 @@ function getFallbackData(): StravaData {
         date: "Apr 2, 2026",
         elevationPct: 48,
         averageSpeed: "20.5",
+        ...fallbackRide,
       },
       {
         id: 3,
@@ -191,6 +234,7 @@ function getFallbackData(): StravaData {
         date: "Mar 30, 2026",
         elevationPct: 67,
         averageSpeed: "19.5",
+        ...fallbackRide,
       },
     ],
     stats: {
