@@ -31,9 +31,12 @@ async function getAccessToken(): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
+    cache: "no-store",
   });
 
   if (!res.ok) {
+    const body = await res.text();
+    console.error(`Strava token refresh failed: ${res.status}`, body);
     throw new Error(`Strava token refresh failed: ${res.status}`);
   }
 
