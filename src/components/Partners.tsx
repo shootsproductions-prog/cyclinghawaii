@@ -24,7 +24,7 @@ export default function Partners() {
             key={name}
             className="flex items-center justify-center h-28 rounded-xl border border-dashed border-white/10 bg-basalt/50 transition-all hover:border-brand/30 hover:bg-basalt"
           >
-            <span className="text-sm text-ash/60 font-medium">{name}</span>
+            <span className="text-sm text-mist/60 font-medium">{name}</span>
           </div>
         ))}
       </div>

@@ -7,18 +7,13 @@ export const metadata: Metadata = {
 };
 
 const colors = [
-  { name: "Brand", var: "--color-brand", hex: "#d97706", desc: "Primary accent" },
-  { name: "Brand Light", var: "--color-brand-light", hex: "#f59e0b", desc: "Hover / secondary" },
-  { name: "Brand Deep", var: "--color-brand-deep", hex: "#b45309", desc: "Pressed / depth" },
-  { name: "Strava", var: "--color-strava", hex: "#fc5200", desc: "Strava integration" },
-  { name: "Black", var: "--color-black", hex: "#0a0a0a", desc: "Primary background" },
-  { name: "Volcanic", var: "--color-volcanic", hex: "#1a1a1a", desc: "Section background" },
-  { name: "Basalt", var: "--color-basalt", hex: "#252525", desc: "Card background" },
-  { name: "White", var: "--color-white", hex: "#f0f0f0", desc: "Primary text" },
-  { name: "Mist", var: "--color-mist", hex: "#b0b0b0", desc: "Body text" },
-  { name: "Ash", var: "--color-ash", hex: "#777777", desc: "Muted text" },
-  { name: "Ocean Deep", var: "--color-ocean-deep", hex: "#0c2d48", desc: "Atmospheric gradient" },
-  { name: "Ocean", var: "--color-ocean", hex: "#1a6b8a", desc: "Atmospheric gradient" },
+  { name: "Brand", hex: "#b45309", desc: "Subtle accent, section labels" },
+  { name: "Strava", hex: "#fc5200", desc: "Bold accent, buttons, links" },
+  { name: "Black", hex: "#0a0a0a", desc: "Primary background" },
+  { name: "Volcanic", hex: "#141414", desc: "Section background" },
+  { name: "Basalt", hex: "#1e1e1e", desc: "Card background" },
+  { name: "White", hex: "#f0f0f0", desc: "Primary text" },
+  { name: "Mist", hex: "#a0a0a0", desc: "Secondary text" },
 ];
 
 const logos = [
@@ -46,7 +41,7 @@ export default function BrandPage() {
       {/* Logo Usage */}
       <section className="mb-20">
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">Logo</h2>
-        <p className="text-ash text-sm mb-8">Three variants for different contexts. Always maintain clear space around the mark.</p>
+        <p className="text-mist text-sm mb-8">Three variants for different contexts. Always maintain clear space around the mark.</p>
         <div className="grid md:grid-cols-3 gap-6">
           {logos.map((logo) => (
             <div key={logo.label} className="text-center">
@@ -54,7 +49,7 @@ export default function BrandPage() {
                 <Image src={logo.src} alt={logo.label} width={120} height={120} />
               </div>
               <div className="font-semibold text-sm">{logo.label}</div>
-              <div className="text-ash text-xs">{logo.desc}</div>
+              <div className="text-mist text-xs">{logo.desc}</div>
             </div>
           ))}
         </div>
@@ -63,7 +58,7 @@ export default function BrandPage() {
       {/* Color Palette */}
       <section className="mb-20">
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">Color Palette</h2>
-        <p className="text-ash text-sm mb-8">Warm amber-orange accents on volcanic dark backgrounds. Ocean tones reserved for atmospheric depth.</p>
+        <p className="text-mist text-sm mb-8">Seven colors. Orange, white, and black. Nothing more.</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {colors.map((color) => (
             <div key={color.hex} className="group">
@@ -72,8 +67,8 @@ export default function BrandPage() {
                 style={{ backgroundColor: color.hex }}
               />
               <div className="text-sm font-medium">{color.name}</div>
-              <div className="text-xs text-ash font-mono">{color.hex}</div>
-              <div className="text-xs text-ash mt-0.5">{color.desc}</div>
+              <div className="text-xs text-mist font-mono">{color.hex}</div>
+              <div className="text-xs text-mist mt-0.5">{color.desc}</div>
             </div>
           ))}
         </div>
@@ -82,8 +77,7 @@ export default function BrandPage() {
       {/* Typography */}
       <section className="mb-20">
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">Typography</h2>
-        <p className="text-ash text-sm mb-8">Two typefaces: Space Grotesk for headings and data, Inter for body text.</p>
-
+        <p className="text-mist text-sm mb-8">Two typefaces: Space Grotesk for headings and data, Inter for body text.</p>
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-basalt rounded-2xl p-8 border border-white/5">
             <div className="text-xs text-brand font-semibold uppercase tracking-widest mb-4">Headings</div>
@@ -91,7 +85,7 @@ export default function BrandPage() {
               <div className="text-4xl font-bold mb-2">Space Grotesk</div>
               <div className="text-2xl font-semibold mb-2">Bold 700 &middot; Semibold 600</div>
               <div className="text-lg font-medium mb-4">Medium 500 &middot; Regular 400</div>
-              <div className="text-xs text-ash">Used for: h1-h3, stat numbers, brand wordmark</div>
+              <div className="text-xs text-mist">Used for: h1-h3, stat numbers, brand wordmark</div>
             </div>
           </div>
           <div className="bg-basalt rounded-2xl p-8 border border-white/5">
@@ -101,7 +95,7 @@ export default function BrandPage() {
               <div className="text-lg font-semibold mb-1">Semibold 600</div>
               <div className="text-base font-medium mb-1">Medium 500 &middot; Regular 400</div>
               <div className="text-base font-light mb-4">Light 300</div>
-              <div className="text-xs text-ash">Used for: body text, navigation, labels, descriptions</div>
+              <div className="text-xs text-mist">Used for: body text, navigation, labels, descriptions</div>
             </div>
           </div>
         </div>
@@ -110,8 +104,7 @@ export default function BrandPage() {
       {/* Tone of Voice */}
       <section>
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">Tone of Voice</h2>
-        <p className="text-ash text-sm mb-8">How Cycling Hawaii communicates.</p>
-
+        <p className="text-mist text-sm mb-8">How Cycling Hawaii communicates.</p>
         <div className="grid md:grid-cols-2 gap-6">
           {[
             { title: "Active & present", desc: "Write in active voice, present tense. \"Ride volcanic ridges\" not \"Volcanic ridges can be ridden.\"" },

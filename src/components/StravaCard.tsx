@@ -12,7 +12,7 @@ export default function StravaCard({ ride }: StravaCardProps) {
         <span className="text-[0.7rem] font-semibold tracking-widest uppercase text-strava">
           {ride.type}
         </span>
-        <span className="text-xs text-ash">{ride.date}</span>
+        <span className="text-xs text-mist">{ride.date}</span>
       </div>
 
       {/* Title */}
@@ -26,7 +26,7 @@ export default function StravaCard({ ride }: StravaCardProps) {
           <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
             {ride.distance}
           </div>
-          <div className="text-[0.7rem] text-ash uppercase tracking-wider mt-0.5">
+          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
             Miles
           </div>
         </div>
@@ -34,7 +34,7 @@ export default function StravaCard({ ride }: StravaCardProps) {
           <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
             {ride.time}
           </div>
-          <div className="text-[0.7rem] text-ash uppercase tracking-wider mt-0.5">
+          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
             Time
           </div>
         </div>
@@ -42,16 +42,16 @@ export default function StravaCard({ ride }: StravaCardProps) {
           <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">
             {ride.elevation}
           </div>
-          <div className="text-[0.7rem] text-ash uppercase tracking-wider mt-0.5">
+          <div className="text-[0.7rem] text-mist uppercase tracking-wider mt-0.5">
             Elev (ft)
           </div>
         </div>
       </div>
 
       {/* Elevation bar */}
-      <div className="mt-4 h-1 bg-lava rounded-full overflow-hidden">
+      <div className="mt-4 h-1 bg-basalt rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-strava to-strava-light"
+          className="h-full rounded-full bg-gradient-to-r from-brand to-strava"
           style={{ width: `${ride.elevationPct}%` }}
         />
       </div>

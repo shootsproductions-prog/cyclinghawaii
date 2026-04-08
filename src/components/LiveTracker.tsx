@@ -20,7 +20,7 @@ export default function LiveTracker() {
         {/* Browser chrome */}
         <div className="flex items-center gap-3 px-5 py-3 bg-volcanic border-b border-white/5">
           <div className="relative w-2 h-2 rounded-full bg-[#ff5f57] after:absolute after:content-[''] shadow-[18px_0_0_#febc2e,36px_0_0_#28c840]" />
-          <div className="flex-1 text-center text-xs text-ash font-mono">
+          <div className="flex-1 text-center text-xs text-mist font-mono">
             livetracker.getcadence.app
           </div>
         </div>

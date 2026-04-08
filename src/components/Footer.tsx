@@ -20,7 +20,7 @@ export default function Footer() {
           href="https://instagram.com/cyclinghawaii"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-ash hover:text-brand transition-colors"
+          className="text-mist hover:text-strava transition-colors"
           aria-label="Instagram"
         >
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@ export default function Footer() {
           href="https://www.strava.com/clubs/cyclinghawaii"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-ash hover:text-brand transition-colors"
+          className="text-mist hover:text-strava transition-colors"
           aria-label="Strava"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -42,7 +42,7 @@ export default function Footer() {
         </a>
         <a
           href="mailto:hello@cyclinghawaii.com"
-          className="text-ash hover:text-brand transition-colors"
+          className="text-mist hover:text-strava transition-colors"
           aria-label="Email"
         >
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -52,7 +52,7 @@ export default function Footer() {
         </a>
       </div>
 
-      <p className="text-sm text-ash">
+      <p className="text-sm text-mist">
         &copy; {new Date().getFullYear()} Cycling Hawaii. Ride with aloha.
       </p>
     </footer>

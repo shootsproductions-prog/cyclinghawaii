@@ -1,12 +1,12 @@
 import SectionHeader from "./SectionHeader";
 
 const posts = [
-  { gradient: "from-ocean-deep to-ocean", caption: "Haleakala summit at dawn" },
-  { gradient: "from-fern to-jungle", caption: "Road to Hana coastal stretch" },
-  { gradient: "from-volcanic via-lava to-ocean", caption: "Chain of Craters descent" },
-  { gradient: "from-[#0d1117] to-fern", caption: "North Shore rollers" },
-  { gradient: "from-ocean to-lagoon", caption: "Waipio Valley lookout" },
-  { gradient: "from-lava to-ocean-deep", caption: "Kailua group ride" },
+  { gradient: "from-brand to-brand", caption: "Haleakala summit at dawn" },
+  { gradient: "from-volcanic to-basalt", caption: "Road to Hana coastal stretch" },
+  { gradient: "from-black via-volcanic to-brand", caption: "Chain of Craters descent" },
+  { gradient: "from-basalt to-brand/60", caption: "North Shore rollers" },
+  { gradient: "from-brand to-strava", caption: "Waipio Valley lookout" },
+  { gradient: "from-volcanic to-black", caption: "Kailua group ride" },
 ];
 
 function InstaIcon() {
@@ -59,7 +59,7 @@ export default function InstagramGrid() {
           href="https://instagram.com/cyclinghawaii"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand font-semibold text-sm hover:text-brand-light transition-colors"
+          className="text-brand font-semibold text-sm hover:text-strava transition-colors"
         >
           Follow @cyclinghawaii &rarr;
         </a>
