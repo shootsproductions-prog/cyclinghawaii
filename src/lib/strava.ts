@@ -20,15 +20,17 @@ const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
 async function getAccessToken(): Promise<string> {
+  const params = new URLSearchParams({
+    client_id: process.env.STRAVA_CLIENT_ID!,
+    client_secret: process.env.STRAVA_CLIENT_SECRET!,
+    grant_type: "refresh_token",
+    refresh_token: process.env.STRAVA_REFRESH_TOKEN!,
+  });
+
   const res = await fetch(STRAVA_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: process.env.STRAVA_CLIENT_ID,
-      client_secret: process.env.STRAVA_CLIENT_SECRET,
-      grant_type: "refresh_token",
-      refresh_token: process.env.STRAVA_REFRESH_TOKEN,
-    }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
   });
 
   if (!res.ok) {
