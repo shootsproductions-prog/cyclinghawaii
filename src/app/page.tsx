@@ -1,6 +1,7 @@
 import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getChallenge } from "@/lib/challenge";
+import { checkAndAwardBadge } from "@/lib/badges";
 import FeaturedRide from "@/components/FeaturedRide";
 import StravaFeed from "@/components/StravaFeed";
 import Challenge from "@/components/Challenge";
@@ -19,6 +20,7 @@ export default async function Home() {
     generateBlogEntries(featured, rides),
     getChallenge(monthlyStats),
   ]);
+  const badges = await checkAndAwardBadge(challenge);
 
   return (
     <main>
@@ -26,7 +28,7 @@ export default async function Home() {
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
       <Divider />
-      <Challenge challenge={challenge} />
+      <Challenge challenge={challenge} badges={badges} />
       <Divider />
       <LiveTracker />
       <Divider />

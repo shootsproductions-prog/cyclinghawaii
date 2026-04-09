@@ -1,10 +1,13 @@
 import { Challenge as ChallengeType } from "@/lib/challenge";
+import { Badge } from "@/lib/badges";
+import BadgeWall from "./BadgeWall";
 
 interface Props {
   challenge: ChallengeType;
+  badges: Badge[];
 }
 
-export default function Challenge({ challenge }: Props) {
+export default function Challenge({ challenge, badges }: Props) {
   const isComplete = challenge.progressPct >= 100;
 
   return (
@@ -83,6 +86,9 @@ export default function Challenge({ challenge }: Props) {
         <p className="text-center text-xs text-mist mt-4">
           {challenge.monthLabel}
         </p>
+
+        {/* Badge wall */}
+        <BadgeWall badges={badges} />
       </div>
     </section>
   );
