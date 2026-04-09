@@ -47,6 +47,7 @@ export default function Nav() {
           { href: "#tracker", label: "Live Tracker" },
           { href: "#instagram", label: "Instagram" },
           { href: "#youtube", label: "YouTube" },
+          { href: "#log", label: "Log Files" },
           { href: "#partners", label: "Partners" },
         ].map((link) => (
           <li key={link.href}>
