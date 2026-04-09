@@ -4,9 +4,10 @@ import SectionHeader from "./SectionHeader";
 
 interface Props {
   entries: BlogEntry[];
+  showArchiveLink?: boolean;
 }
 
-export default function LogFiles({ entries }: Props) {
+export default function LogFiles({ entries, showArchiveLink }: Props) {
   if (entries.length === 0) return null;
 
   return (
@@ -75,6 +76,17 @@ export default function LogFiles({ entries }: Props) {
           </article>
         ))}
       </div>
+
+      {showArchiveLink && entries.length >= 3 && (
+        <div className="text-center mt-12">
+          <a
+            href="/log"
+            className="inline-flex items-center gap-2 px-6 py-3 border border-border text-mist font-medium text-sm rounded-lg transition-all hover:border-strava hover:text-strava"
+          >
+            Read the full archive &rarr;
+          </a>
+        </div>
+      )}
     </section>
   );
 }

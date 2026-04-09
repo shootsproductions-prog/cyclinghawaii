@@ -37,7 +37,7 @@ export default async function Home() {
       </FadeIn>
       <Divider />
       <FadeIn>
-        <LogFiles entries={blogEntries} />
+        <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       </FadeIn>
       <Divider />
       <FadeIn>

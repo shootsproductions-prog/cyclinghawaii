@@ -1,9 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { put, list, head } from "@vercel/blob";
 import { FormattedFeaturedRide, FormattedRide } from "@/types/strava";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+const BLOB_KEY = "blog-entries.json";
 
 export interface BlogEntry {
   rideId: number;
@@ -16,31 +19,75 @@ export interface BlogEntry {
   distance: string;
   elevation: string;
   time: string;
+  generatedAt: string;
+}
+
+// Load all existing entries from blob storage
+async function loadEntries(): Promise<BlogEntry[]> {
+  try {
+    const blobs = await list({ prefix: BLOB_KEY });
+    if (blobs.blobs.length === 0) return [];
+
+    const latest = blobs.blobs[0];
+    const res = await fetch(latest.url);
+    if (!res.ok) return [];
+    return res.json();
+  } catch (error) {
+    console.log("No existing blog entries found:", error);
+    return [];
+  }
+}
+
+// Save all entries to blob storage
+async function saveEntries(entries: BlogEntry[]): Promise<void> {
+  try {
+    await put(BLOB_KEY, JSON.stringify(entries), {
+      access: "public",
+      addRandomSuffix: false,
+    });
+  } catch (error) {
+    console.error("Failed to save blog entries:", error);
+  }
 }
 
 export async function generateBlogEntries(
   featured: FormattedFeaturedRide,
   rides: FormattedRide[]
 ): Promise<BlogEntry[]> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return getFallbackEntries();
-  }
+  // Load existing archive
+  let existingEntries = await loadEntries();
+  const existingIds = new Set(existingEntries.map((e) => e.rideId));
 
-  // Generate for featured + up to 2 recent rides (3 total)
-  const ridesToBlog = [featured, ...rides.slice(0, 2)];
-  const entries: BlogEntry[] = [];
+  // Determine which rides need new entries (featured + recent)
+  const ridesToCheck = [featured, ...rides.slice(0, 2)];
+  const newRides = ridesToCheck.filter((r) => !existingIds.has(r.id));
 
-  for (const ride of ridesToBlog) {
-    try {
-      const entry = await generateEntry(ride);
-      entries.push(entry);
-    } catch (error) {
-      console.error(`Blog generation failed for ride ${ride.id}:`, error);
-      entries.push(makeFallbackEntry(ride));
+  if (newRides.length > 0 && process.env.ANTHROPIC_API_KEY) {
+    // Generate entries for new rides only
+    for (const ride of newRides) {
+      try {
+        const entry = await generateEntry(ride);
+        existingEntries.unshift(entry); // newest first
+      } catch (error) {
+        console.error(`Blog generation failed for ride ${ride.id}:`, error);
+        existingEntries.unshift(makeFallbackEntry(ride));
+      }
     }
+
+    // Save the updated archive
+    await saveEntries(existingEntries);
+  } else if (newRides.length > 0) {
+    // No API key — use fallback for new rides
+    for (const ride of newRides) {
+      existingEntries.unshift(makeFallbackEntry(ride));
+    }
+    await saveEntries(existingEntries);
   }
 
-  return entries;
+  // Return all entries (for the archive page), sorted newest first
+  return existingEntries.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 }
 
 async function generateEntry(
@@ -92,6 +139,7 @@ Rules:
     distance: ride.distance,
     elevation: ride.elevation,
     time: ride.time,
+    generatedAt: new Date().toISOString(),
   };
 }
 
@@ -107,22 +155,6 @@ function makeFallbackEntry(ride: FormattedRide): BlogEntry {
     distance: ride.distance,
     elevation: ride.elevation,
     time: ride.time,
+    generatedAt: new Date().toISOString(),
   };
-}
-
-function getFallbackEntries(): BlogEntry[] {
-  return [
-    {
-      rideId: 1,
-      title: "Haleakala Sunrise Bomb",
-      date: "Apr 4, 2026",
-      body: "36.2 miles of pure gravity. Vini pointed the bike downhill from 10,000 feet and held on. Average speed suggests he was either very aerodynamic or slightly terrified. The 9,740 feet of elevation gain on the way up? We don't talk about that part.",
-      rideName: "Haleakala Sunrise Bomb",
-      stravaUrl: "#",
-      mapImageUrl: "",
-      distance: "36.2",
-      elevation: "9,740",
-      time: "1:48",
-    },
-  ];
 }
