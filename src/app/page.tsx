@@ -7,7 +7,6 @@ import InstagramGrid from "@/components/InstagramGrid";
 import YouTubePlaylist from "@/components/YouTubePlaylist";
 import LogFiles from "@/components/LogFiles";
 import Partners from "@/components/Partners";
-import FadeIn from "@/components/FadeIn";
 import Divider from "@/components/Divider";
 
 export const revalidate = 3600;
@@ -20,29 +19,17 @@ export default async function Home() {
     <main>
       <FeaturedRide ride={featured} />
       <Divider />
-      <FadeIn>
-        <StravaFeed rides={rides} stats={stats} />
-      </FadeIn>
+      <StravaFeed rides={rides} stats={stats} />
       <Divider />
-      <FadeIn>
-        <LiveTracker />
-      </FadeIn>
+      <LiveTracker />
       <Divider />
-      <FadeIn>
-        <InstagramGrid />
-      </FadeIn>
+      <InstagramGrid />
       <Divider />
-      <FadeIn>
-        <YouTubePlaylist />
-      </FadeIn>
+      <YouTubePlaylist />
       <Divider />
-      <FadeIn>
-        <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
-      </FadeIn>
+      <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
-      <FadeIn>
-        <Partners />
-      </FadeIn>
+      <Partners />
     </main>
   );
 }
