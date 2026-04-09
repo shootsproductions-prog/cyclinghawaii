@@ -11,6 +11,11 @@ export interface BlogEntry {
   date: string;
   body: string;
   rideName: string;
+  stravaUrl: string;
+  mapImageUrl: string;
+  distance: string;
+  elevation: string;
+  time: string;
 }
 
 export async function generateBlogEntries(
@@ -82,6 +87,11 @@ Rules:
     date: ride.date,
     body,
     rideName: ride.name,
+    stravaUrl: ride.stravaUrl,
+    mapImageUrl: ride.mapImageUrl,
+    distance: ride.distance,
+    elevation: ride.elevation,
+    time: ride.time,
   };
 }
 
@@ -92,6 +102,11 @@ function makeFallbackEntry(ride: FormattedRide): BlogEntry {
     date: ride.date,
     body: `${ride.distance} miles. ${ride.elevation} feet of climbing. ${ride.time} in the saddle. The data speaks for itself — Vini let the pedals do the talking.`,
     rideName: ride.name,
+    stravaUrl: ride.stravaUrl,
+    mapImageUrl: ride.mapImageUrl,
+    distance: ride.distance,
+    elevation: ride.elevation,
+    time: ride.time,
   };
 }
 
@@ -103,6 +118,11 @@ function getFallbackEntries(): BlogEntry[] {
       date: "Apr 4, 2026",
       body: "36.2 miles of pure gravity. Vini pointed the bike downhill from 10,000 feet and held on. Average speed suggests he was either very aerodynamic or slightly terrified. The 9,740 feet of elevation gain on the way up? We don't talk about that part.",
       rideName: "Haleakala Sunrise Bomb",
+      stravaUrl: "#",
+      mapImageUrl: "",
+      distance: "36.2",
+      elevation: "9,740",
+      time: "1:48",
     },
   ];
 }
