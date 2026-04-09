@@ -6,6 +6,7 @@ import {
   FormattedRide,
   FormattedFeaturedRide,
   FormattedStats,
+  MonthlyStats,
   StravaData,
 } from "@/types/strava";
 import {
@@ -210,6 +211,33 @@ function formatStats(stats: StravaAthleteStats): FormattedStats {
   };
 }
 
+function calculateMonthlyStats(activities: StravaActivity[]): MonthlyStats {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const thisMonth = activities.filter((a) => {
+    const d = new Date(a.start_date_local);
+    return d >= monthStart && (a.type === "Ride" || a.sport_type === "Ride");
+  });
+
+  const totalDistance = thisMonth.reduce((s, a) => s + a.distance, 0);
+  const totalTime = thisMonth.reduce((s, a) => s + a.moving_time, 0);
+  const totalElev = thisMonth.reduce((s, a) => s + a.total_elevation_gain, 0);
+  const totalCalories = thisMonth.reduce((s, a) => s + (a.calories || 0), 0);
+
+  return {
+    miles: Math.round(metersToMiles(totalDistance) * 10) / 10,
+    rides: thisMonth.length,
+    elevationFt: Math.round(metersToFeet(totalElev)),
+    movingTimeHours: Math.round((totalTime / 3600) * 10) / 10,
+    calories: totalCalories,
+    avgSpeedMph:
+      totalTime > 0
+        ? Math.round((metersToMiles(totalDistance) / (totalTime / 3600)) * 10) / 10
+        : 0,
+  };
+}
+
 export async function getStravaData(): Promise<StravaData> {
   if (
     !process.env.STRAVA_CLIENT_ID ||
@@ -248,7 +276,8 @@ export async function getStravaData(): Promise<StravaData> {
       largeMapImageUrl: buildMapImageUrl(featuredBase.polyline, 800, 400),
     };
 
-    return { featured, rides: allRides.slice(1), stats };
+    const monthlyStats = calculateMonthlyStats(activities);
+    return { featured, rides: allRides.slice(1), stats, monthlyStats };
   } catch (error) {
     console.error("Strava API error, using fallback data:", error);
     return getFallbackData();
@@ -315,6 +344,14 @@ function getFallbackData(): StravaData {
       totalRides: "62",
       totalElevation: "142k",
       avgSpeed: "18.4",
+    },
+    monthlyStats: {
+      miles: 45,
+      rides: 4,
+      elevationFt: 3200,
+      movingTimeHours: 6.5,
+      calories: 2800,
+      avgSpeedMph: 12.5,
     },
   };
 }

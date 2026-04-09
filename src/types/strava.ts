@@ -90,8 +90,18 @@ export interface FormattedStats {
   avgSpeed: string;
 }
 
+export interface MonthlyStats {
+  miles: number;
+  rides: number;
+  elevationFt: number;
+  movingTimeHours: number;
+  calories: number;
+  avgSpeedMph: number;
+}
+
 export interface StravaData {
   featured: FormattedFeaturedRide;
   rides: FormattedRide[];
   stats: FormattedStats;
+  monthlyStats: MonthlyStats;
 }

@@ -1,25 +1,32 @@
 import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
+import { getChallenge } from "@/lib/challenge";
 import FeaturedRide from "@/components/FeaturedRide";
 import StravaFeed from "@/components/StravaFeed";
+import Challenge from "@/components/Challenge";
 import LiveTracker from "@/components/LiveTracker";
 import InstagramGrid from "@/components/InstagramGrid";
-import YouTubePlaylist from "@/components/YouTubePlaylist";
 import LogFiles from "@/components/LogFiles";
+import YouTubePlaylist from "@/components/YouTubePlaylist";
 import Partners from "@/components/Partners";
 import Divider from "@/components/Divider";
 
 export const revalidate = 3600;
 
 export default async function Home() {
-  const { featured, rides, stats } = await getStravaData();
-  const blogEntries = await generateBlogEntries(featured, rides);
+  const { featured, rides, stats, monthlyStats } = await getStravaData();
+  const [blogEntries, challenge] = await Promise.all([
+    generateBlogEntries(featured, rides),
+    getChallenge(monthlyStats),
+  ]);
 
   return (
     <main>
       <FeaturedRide ride={featured} />
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
+      <Divider />
+      <Challenge challenge={challenge} />
       <Divider />
       <LiveTracker />
       <Divider />
