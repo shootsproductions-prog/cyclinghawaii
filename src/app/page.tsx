@@ -25,9 +25,9 @@ export default async function Home() {
       <Divider />
       <InstagramGrid />
       <Divider />
-      <YouTubePlaylist />
-      <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
+      <Divider />
+      <YouTubePlaylist />
       <Divider />
       <Partners />
     </main>
