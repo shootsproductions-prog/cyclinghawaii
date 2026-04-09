@@ -18,7 +18,7 @@ export default function StravaFeed({ rides, stats }: Props) {
       />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1200px] mx-auto mb-10">
-        {rides.slice(0, 9).map((ride) => (
+        {rides.slice(0, 3).map((ride) => (
           <StravaCard key={ride.id} ride={ride} />
         ))}
       </div>
