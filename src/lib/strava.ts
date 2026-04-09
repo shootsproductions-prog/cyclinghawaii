@@ -174,6 +174,8 @@ function formatActivity(ride: StravaActivity, maxElev: number): FormattedRide {
     comments: ride.comment_count || 0,
     calories: ride.calories || 0,
     avgHeartrate: ride.average_heartrate,
+    avgWatts: ride.average_watts,
+    avgCadence: ride.average_cadence,
     achievements: ride.achievement_count || 0,
     polyline: ride.map?.summary_polyline || "",
     mapImageUrl: buildMapImageUrl(
@@ -258,6 +260,9 @@ function getFallbackData(): StravaData {
     kudos: 12,
     comments: 3,
     calories: 1850,
+    avgHeartrate: 145,
+    avgWatts: 185,
+    avgCadence: 88,
     achievements: 5,
     polyline: "",
     mapImageUrl: "",

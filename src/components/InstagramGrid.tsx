@@ -31,9 +31,9 @@ export default function InstagramGrid() {
   return (
     <section id="instagram" className="py-20 px-6">
       <SectionHeader
-        label="@cyclinghawaii"
-        title="From the Feed"
-        description="Scenes from the road — sunrises, summits, and everything in between."
+        label="From the Feed"
+        title="@cyclinghawaii"
+        description="Vini posts when the light is right. Which in Hawaii is basically always."
       />
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-[1100px] mx-auto">
@@ -63,6 +63,9 @@ export default function InstagramGrid() {
         >
           Follow @cyclinghawaii &rarr;
         </a>
+        <p className="text-mist text-sm mt-3 italic">
+          Paradise is a state of mind.
+        </p>
       </div>
     </section>
   );

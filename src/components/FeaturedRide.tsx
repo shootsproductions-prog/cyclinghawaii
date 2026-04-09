@@ -26,8 +26,8 @@ export default function FeaturedRide({ ride }: Props) {
               unoptimized
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-surface to-border flex items-center justify-center">
-              <span className="text-mist text-sm">Route map</span>
+            <div className="w-full h-full bg-surface flex items-center justify-center">
+              <span className="text-mist text-sm">Route map loading...</span>
             </div>
           )}
         </a>
@@ -52,35 +52,33 @@ export default function FeaturedRide({ ride }: Props) {
             href={ride.stravaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-3 text-sm font-medium text-strava hover:underline"
+            className="inline-block mt-3 ml-4 text-sm font-medium text-strava hover:underline"
           >
             View on Strava &rarr;
           </a>
         </div>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Stats Grid — Distance, Time, Elevation, Speed */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <Metric value={ride.distance} label="Miles" accent />
           <Metric value={ride.time} label="Time" />
           <Metric value={ride.elevation} label="Elevation (ft)" />
           <Metric value={ride.averageSpeed} label="Avg Speed (mph)" />
-          <Metric value={ride.calories.toLocaleString()} label="Calories" />
-          <Metric value={ride.kudos.toString()} label="Kudos" />
-          <Metric value={ride.comments.toString()} label="Comments" />
-          <Metric value={ride.achievements.toString()} label="Achievements" />
         </div>
 
-        {/* Heart rate row (if available) */}
-        {ride.avgHeartrate && (
-          <div className="flex gap-6 mb-8">
-            <div>
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-strava">
-                {Math.round(ride.avgHeartrate)}
-              </span>
-              <span className="text-xs text-mist ml-1">avg bpm</span>
-            </div>
-          </div>
-        )}
+        {/* Stats Grid — Power, Cadence, Heart Rate, Achievements */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {ride.avgWatts && (
+            <Metric value={`${Math.round(ride.avgWatts)}`} label="Avg Power (w)" />
+          )}
+          {ride.avgCadence && (
+            <Metric value={`${Math.round(ride.avgCadence)}`} label="Cadence (rpm)" />
+          )}
+          {ride.avgHeartrate && (
+            <Metric value={`${Math.round(ride.avgHeartrate)}`} label="Avg HR (bpm)" accent />
+          )}
+          <Metric value={ride.achievements.toString()} label="Achievements" />
+        </div>
 
         {/* Photos */}
         {ride.photos.length > 0 && (
@@ -91,13 +89,13 @@ export default function FeaturedRide({ ride }: Props) {
               return (
                 <div
                   key={photo.unique_id}
-                  className="flex-shrink-0 w-64 h-48 rounded-xl overflow-hidden border border-border"
+                  className="flex-shrink-0 w-72 h-52 rounded-xl overflow-hidden border border-border shadow-sm"
                 >
                   <Image
                     src={url}
                     alt={photo.caption || ride.name}
-                    width={256}
-                    height={192}
+                    width={288}
+                    height={208}
                     className="w-full h-full object-cover"
                     unoptimized
                   />

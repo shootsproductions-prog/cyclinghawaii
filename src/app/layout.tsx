@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import EasterEgg from "@/components/EasterEgg";
 import "./globals.css";
 
 const inter = Inter({
@@ -64,6 +65,7 @@ export default function RootLayout({
         <Nav />
         {children}
         <Footer />
+        <EasterEgg />
       </body>
     </html>
   );

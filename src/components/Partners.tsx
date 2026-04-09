@@ -15,7 +15,7 @@ export default function Partners() {
       <SectionHeader
         label="Partners"
         title="Ride With Us"
-        description="Interested in reaching an engaged audience of cyclists and adventure travelers?"
+        description="Your brand in front of cyclists who actually ride. Not just scroll."
       />
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-[900px] mx-auto mb-12">
@@ -30,13 +30,16 @@ export default function Partners() {
       </div>
 
       <div className="text-center">
-        <p className="text-mist text-sm mb-6 max-w-md mx-auto">
-          We partner with brands that share our passion for cycling and the
-          Hawaiian Islands. Reach out to discuss sponsorship opportunities.
+        <p className="text-mist text-sm mb-2 max-w-lg mx-auto">
+          Cycling Hawaii reaches an engaged audience of endurance athletes,
+          adventure travelers, and people who think &quot;flat&quot; is a four-letter word.
+        </p>
+        <p className="text-mist text-xs mb-6">
+          Sponsorships &middot; Product placement &middot; Content collaborations
         </p>
         <a
-          href="mailto:hello@cyclinghawaii.com"
-          className="inline-flex items-center gap-2 px-6 py-3 border border-brand/40 text-brand font-semibold text-sm rounded-lg transition-all hover:bg-brand/5 hover:border-brand/60"
+          href="mailto:vini@cyclinghawaii.com"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-strava text-white font-semibold text-sm rounded-lg transition-all hover:bg-brand hover:shadow-lg"
         >
           <svg
             width="16"
@@ -49,8 +52,9 @@ export default function Partners() {
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
             <polyline points="22,6 12,13 2,6" />
           </svg>
-          Partner With Us
+          Let&apos;s Talk
         </a>
+        <p className="text-mist text-xs mt-3">vini@cyclinghawaii.com</p>
       </div>
     </section>
   );

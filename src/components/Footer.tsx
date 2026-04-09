@@ -40,7 +40,7 @@ export default function Footer() {
           </svg>
         </a>
         <a
-          href="mailto:hello@cyclinghawaii.com"
+          href="mailto:vini@cyclinghawaii.com"
           className="text-mist hover:text-strava transition-colors"
           aria-label="Email"
         >

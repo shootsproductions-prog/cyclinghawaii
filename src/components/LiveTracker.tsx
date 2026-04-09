@@ -5,8 +5,8 @@ export default function LiveTracker() {
     <section id="tracker" className="py-20 px-6">
       <SectionHeader
         label="Live Tracker"
-        title="Follow the Ride"
-        description="Real-time GPS tracking powered by Cadence. Watch riders navigate the islands live."
+        title="Follow Me"
+        description="GPS tracking powered by Cadence. Updated every 60 seconds. If the dot stops moving, send snacks."
       />
 
       <div className="max-w-[1100px] mx-auto rounded-2xl overflow-hidden border border-border shadow-lg bg-card">

@@ -27,6 +27,7 @@ export interface StravaActivity {
   average_heartrate?: number;
   max_heartrate?: number;
   average_watts?: number;
+  average_cadence?: number;
   suffer_score?: number;
   map: {
     id: string;
@@ -69,6 +70,8 @@ export interface FormattedRide {
   comments: number;
   calories: number;
   avgHeartrate?: number;
+  avgWatts?: number;
+  avgCadence?: number;
   achievements: number;
   polyline: string;
   mapImageUrl: string;

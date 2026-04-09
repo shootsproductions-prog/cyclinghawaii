@@ -14,7 +14,7 @@ export default function StravaFeed({ rides, stats }: Props) {
       <SectionHeader
         label="Strava"
         title="Recent Rides"
-        description="Latest routes and stats — updated automatically from Strava."
+        description="Vini's ride log. Automatically pulled from Strava because he's too busy pedaling to update a website."
       />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1200px] mx-auto mb-10">

@@ -6,7 +6,7 @@ export default function YouTubePlaylist() {
       <SectionHeader
         label="YouTube"
         title="Watch the Rides"
-        description="Ride footage, route previews, and stories from the islands."
+        description="45mm tubeless tires over lava rocks. No can road bikes."
       />
 
       <div className="max-w-[1100px] mx-auto rounded-2xl overflow-hidden border border-border shadow-sm">

@@ -28,6 +28,7 @@ export default function Nav() {
           width={32}
           height={32}
           className="rounded-full"
+          title="Aloha 🤙"
         />
         <span className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold tracking-tight text-text">
           CYCLING<span className="text-strava">HAWAII</span>
