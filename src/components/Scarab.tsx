@@ -4,11 +4,13 @@ import path from "path";
 import SectionHeader from "./SectionHeader";
 
 const specs = [
-  { label: "Frame", value: "Trek Checkpoint SL6" },
-  { label: "Material", value: "Full Carbon" },
-  { label: "Drivetrain", value: "Electronic Shifting" },
-  { label: "Brakes", value: "Hydraulic Disc" },
+  { label: "Frame", value: "Trek Checkpoint SL 7 Gen 3" },
+  { label: "Material", value: "OCLV Carbon" },
+  { label: "Drivetrain", value: "SRAM Force AXS 1×12" },
+  { label: "Gearing", value: "40T × 10–44T" },
+  { label: "Wheels", value: "Bontrager Aeolus Elite Carbon" },
   { label: "Tires", value: "45mm Tubeless" },
+  { label: "Brakes", value: "SRAM Hydraulic Disc" },
   { label: "Status", value: "Spoiled" },
 ];
 
