@@ -10,21 +10,23 @@ export default function Partners() {
       />
 
       <div className="max-w-[680px] mx-auto text-center">
-        <p className="text-mist text-base leading-relaxed mb-6">
+        <p className="text-mist text-base leading-relaxed mb-8">
           If your brand rides with cyclists who actually ride, there&apos;s
           space here. Sponsorships, product placements, content
           collaborations — all welcome.
         </p>
-        <p className="text-mist text-sm leading-relaxed mb-6">
-          Messages go through <span className="text-text font-medium">Laura</span>,
-          his assistant. She takes notes, triages, and makes sure nothing slips
-          through. She&apos;s thorough. Sometimes too thorough.
-        </p>
-        <p className="text-mist text-sm leading-relaxed mb-10 italic">
-          Or skip the email and just meet him at the coffee shop. He&apos;ll
-          be the guy in bibs ordering a second espresso and pretending
-          he&apos;s about to leave.
-        </p>
+
+        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 mb-10 text-left">
+          <p className="text-mist text-[0.95rem] leading-relaxed">
+            <span className="font-semibold text-text">Laura here.</span>{" "}
+            I&apos;m Vini&apos;s assistant, coach, moral support, and the one
+            who remembers where he left his sunglasses. Send your message my
+            way — I&apos;ll take notes, triage, and make sure it lands in his
+            inbox. I&apos;m thorough. Occasionally to a fault. If you don&apos;t
+            hear back within a day, it&apos;s because he&apos;s on the bike —
+            and even I can&apos;t compete with a headwind.
+          </p>
+        </div>
 
         <a
           href="mailto:vini@cyclinghawaii.com"
@@ -45,6 +47,12 @@ export default function Partners() {
         </a>
         <p className="text-mist text-xs mt-4 font-mono">
           vini@cyclinghawaii.com
+        </p>
+
+        <p className="text-mist text-sm leading-relaxed mt-10 italic">
+          Or skip the email and just meet him at the coffee shop. He&apos;ll
+          be the guy in bibs ordering a second espresso and pretending
+          he&apos;s about to leave.
         </p>
       </div>
     </section>
