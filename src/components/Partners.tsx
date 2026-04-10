@@ -10,21 +10,15 @@ export default function Partners() {
       />
 
       <div className="max-w-[680px] mx-auto text-center">
-        <p className="text-mist text-base leading-relaxed mb-8">
-          If your brand rides with cyclists who actually ride, there&apos;s
-          space here. Sponsorships, product placements, content
-          collaborations — all welcome.
-        </p>
-
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8 mb-10 text-left">
           <p className="text-mist text-[0.95rem] leading-relaxed">
             <span className="font-semibold text-text">Laura here.</span>{" "}
             I&apos;m Vini&apos;s assistant, coach, moral support, and the one
-            who remembers where he left his sunglasses. Send your message my
-            way — I&apos;ll take notes, triage, and make sure it lands in his
-            inbox. I&apos;m thorough. Occasionally to a fault. If you don&apos;t
-            hear back within a day, it&apos;s because he&apos;s on the bike —
-            and even I can&apos;t compete with a headwind.
+            who remembers where he left his sunglasses. Send your message.
+            I&apos;ll take notes, triage, and make sure it lands in his inbox.
+            I&apos;m thorough. Occasionally to a fault. If you don&apos;t hear
+            back within a day, it&apos;s because he&apos;s on the bike chasing
+            another sunset and even I can&apos;t compete with a headwind.
           </p>
         </div>
 
