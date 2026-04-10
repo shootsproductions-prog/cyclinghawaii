@@ -30,6 +30,7 @@ async function saveBadges(badges: Badge[]): Promise<void> {
     await put(BLOB_KEY, JSON.stringify(badges), {
       access: "public",
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
   } catch (error) {
     console.error("Failed to save badges:", error);

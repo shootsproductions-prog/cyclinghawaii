@@ -46,6 +46,7 @@ async function saveEntries(entries: BlogEntry[]): Promise<void> {
     await put(BLOB_KEY, JSON.stringify(entries), {
       access: "public",
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
   } catch (error) {
     console.error("Failed to save blog entries:", error);

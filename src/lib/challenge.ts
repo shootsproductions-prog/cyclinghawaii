@@ -51,6 +51,7 @@ async function saveChallenge(challenge: Challenge): Promise<void> {
     await put(BLOB_KEY, JSON.stringify(challenge), {
       access: "public",
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
   } catch (error) {
     console.error("Failed to save challenge:", error);
@@ -151,11 +152,17 @@ Rules for description: One sentence, witty, describes the challenge.`;
     messages: [{ role: "user", content: prompt }],
   });
 
-  const text =
+  let text =
     response.content[0].type === "text" ? response.content[0].text : "{}";
 
+  // Strip markdown code blocks if present
+  text = text.trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  }
+
   // Parse the JSON response
-  const data = JSON.parse(text.trim());
+  const data = JSON.parse(text);
   const current = getMetricValue(monthlyStats, data.metric);
   const progressPct = Math.min(
     Math.round((current / data.goal) * 100),
