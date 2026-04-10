@@ -49,7 +49,7 @@ export default function Nav() {
           { href: "#instagram", label: "Instagram" },
           { href: "#youtube", label: "YouTube" },
           { href: "#log", label: "Log Files" },
-          { href: "#partners", label: "Partners" },
+          { href: "#partners", label: "Contact" },
         ].map((link) => (
           <li key={link.href}>
             <a

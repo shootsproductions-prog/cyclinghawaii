@@ -27,8 +27,6 @@ export default async function Home() {
     <main>
       <FeaturedRide ride={featured} />
       <Divider />
-      <Scarab />
-      <Divider />
       <StravaFeed rides={rides} stats={stats} />
       <Divider />
       <Challenge challenge={challenge} badges={badges} />
@@ -38,6 +36,8 @@ export default async function Home() {
       <InstagramGrid />
       <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
+      <Divider />
+      <Scarab />
       <Divider />
       <YouTubePlaylist />
       <Divider />
