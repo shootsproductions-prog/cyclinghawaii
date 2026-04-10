@@ -122,7 +122,9 @@ async function generateChallenge(
   const dayOfMonth = now.getDate();
   const daysLeft = daysInMonth - dayOfMonth;
 
-  const prompt = `You are Vini Pimenta's AI cycling coach on cyclinghawaii.com. You set monthly challenges that are ambitious but achievable based on his current stats.
+  const prompt = `You are Vini Pimenta's AI cycling coach on cyclinghawaii.com. You set AMBITIOUS monthly challenges designed to push him back into high-volume cycling. Your job is to motivate, not coddle.
+
+IMPORTANT CONTEXT: Vini used to ride 500+ miles per month. He wants to get back to that level. Your challenges should PUSH him hard — not just match his current (underperforming) pace.
 
 Current month: ${monthLabel}
 Day ${dayOfMonth} of ${daysInMonth} (${daysLeft} days left)
@@ -135,16 +137,24 @@ Vini's stats THIS MONTH so far:
 - Calories: ${monthlyStats.calories}
 - Avg Speed: ${monthlyStats.avgSpeedMph} mph
 
-Pick ONE metric and set a challenging but achievable monthly goal. Project from his current pace — if he's at 50 miles on day 10, a 200-mile month goal would be ambitious but doable.
+Pick ONE metric and set a hard monthly goal. DO NOT project from his current pace — that's soft. Set a goal that requires real commitment.
+
+TARGET RANGES (these are baselines — set goals at or above these):
+- miles: 300-500 (400 is solid, 500 is historical peak)
+- elevationFt: 20000-40000 (30000 is the sweet spot for Maui climbing)
+- rides: 20-25 (basically every weekday plus weekends)
+- movingTimeHours: 25-40
+- calories: 15000-25000
 
 Respond in EXACTLY this JSON format (no markdown, no code blocks):
-{"name":"Catchy Challenge Name","description":"One witty sentence about the challenge","metric":"miles","metricLabel":"Miles","goal":200,"coachNote":"One witty sentence about current progress"}
+{"name":"Catchy Challenge Name","description":"One witty sentence about the challenge","metric":"miles","metricLabel":"Miles","goal":400,"coachNote":"One witty sentence about current progress"}
 
-Rules for the name: Make it a fun alliterative or punny name tied to the month (e.g., "April Avalanche", "May Madness").
-Rules for metric: Must be one of: miles, elevationFt, rides, movingTimeHours, calories
-Rules for goal: Must be a round number, achievable but requires effort.
-Rules for coachNote: Refer to Vini in 3rd person, be funny, reference his actual current number.
-Rules for description: One sentence, witty, describes the challenge.`;
+Rules:
+- Name: Fun alliterative/punny name tied to the month (e.g., "May Mileage", "June Juggernaut")
+- Metric: Must be one of: miles, elevationFt, rides, movingTimeHours, calories
+- Goal: Round number in the target range above. Push hard.
+- Description: One witty sentence that acknowledges this is ambitious
+- coachNote: Refer to Vini in 3rd person. Be funny. Reference his actual current number. If he's way behind, roast gently but motivationally.`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -193,15 +203,32 @@ async function generateCoachNote(
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dayOfMonth = now.getDate();
 
+  // Calculate pace expectations
+  const expectedPct = Math.round((dayOfMonth / daysInMonth) * 100);
+  const paceDelta = progressPct - expectedPct;
+
   const prompt = `You are Vini's AI cycling coach. Write ONE witty sentence about his progress on the "${challenge.name}" challenge.
+
+CONTEXT: Vini used to ride 500 miles/month. He's trying to get back to that level. This is an AMBITIOUS challenge — don't let him off easy.
 
 Challenge: ${challenge.name} — ${challenge.goal} ${challenge.metricLabel} this month
 Current: ${current} ${challenge.metricLabel} (${progressPct}% done)
-Day ${dayOfMonth} of ${daysInMonth}
+Day ${dayOfMonth} of ${daysInMonth} (he should be at ~${expectedPct}% to be on pace)
+Pace delta: ${paceDelta > 0 ? "+" : ""}${paceDelta}% vs expected
 
-${progressPct >= 100 ? "HE CRUSHED IT! Celebrate!" : progressPct > 70 ? "He's close, push him!" : progressPct > 40 ? "He's on pace, keep it up." : "He's behind. Roast him gently."}
+${
+  progressPct >= 100
+    ? "HE CRUSHED IT! Celebrate loudly!"
+    : paceDelta >= 10
+    ? "Ahead of pace. Hype him up but keep him hungry."
+    : paceDelta >= -5
+    ? "Right on pace. Encouraging but firm."
+    : paceDelta >= -20
+    ? "Falling behind. Motivational roast — remind him what he's capable of."
+    : "WAY behind. Hard roast with tough love. He needs to get on the bike."
+}
 
-One sentence only. 3rd person. Funny. No emojis.`;
+One sentence only. 3rd person. Funny. Specific numbers. No emojis.`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -219,14 +246,14 @@ function getFallbackChallenge(monthlyStats: MonthlyStats): Challenge {
   return {
     month: currentMonth,
     monthLabel: getMonthLabel(),
-    name: "April Avalanche",
-    description: "100 miles before the month runs out. The volcano isn't going to climb itself.",
+    name: "The 400 Club",
+    description: "400 miles this month. No excuses, no shortcuts, no mercy.",
     metric: "miles",
     metricLabel: "Miles",
-    goal: 100,
+    goal: 400,
     current: monthlyStats.miles,
-    progressPct: Math.min(Math.round((monthlyStats.miles / 100) * 100), 100),
-    coachNote: `${monthlyStats.miles} miles down. The bike is starting to wonder if Vini remembers it exists.`,
+    progressPct: Math.min(Math.round((monthlyStats.miles / 400) * 100), 100),
+    coachNote: `${monthlyStats.miles} miles down, ${Math.max(400 - Math.round(monthlyStats.miles), 0)} to go. Vini used to do 500 in his sleep. The bike is still waiting.`,
     generatedAt: new Date().toISOString(),
   };
 }
