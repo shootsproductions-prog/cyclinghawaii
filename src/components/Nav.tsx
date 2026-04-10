@@ -44,6 +44,7 @@ export default function Nav() {
       >
         {[
           { href: "#strava", label: "Rides" },
+          { href: "#scarab", label: "Scarab" },
           { href: "#tracker", label: "Live Tracker" },
           { href: "#instagram", label: "Instagram" },
           { href: "#youtube", label: "YouTube" },

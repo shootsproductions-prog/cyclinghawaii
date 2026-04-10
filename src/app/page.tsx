@@ -3,6 +3,7 @@ import { generateBlogEntries } from "@/lib/blog";
 import { getChallenge } from "@/lib/challenge";
 import { checkAndAwardBadge } from "@/lib/badges";
 import FeaturedRide from "@/components/FeaturedRide";
+import Scarab from "@/components/Scarab";
 import StravaFeed from "@/components/StravaFeed";
 import Challenge from "@/components/Challenge";
 import LiveTracker from "@/components/LiveTracker";
@@ -25,6 +26,8 @@ export default async function Home() {
   return (
     <main>
       <FeaturedRide ride={featured} />
+      <Divider />
+      <Scarab />
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
       <Divider />
