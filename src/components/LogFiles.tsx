@@ -69,9 +69,29 @@ export default function LogFiles({ entries, showArchiveLink }: Props) {
               </a>
             </div>
 
-            {/* Blog body */}
-            <div className="text-mist text-[0.95rem] leading-relaxed whitespace-pre-line">
-              {entry.body}
+            {/* Blog body with optional photo */}
+            <div className="md:flex md:gap-6">
+              {entry.photoUrl && (
+                <div className="md:w-[280px] md:shrink-0 mb-4 md:mb-0">
+                  <a
+                    href={entry.stravaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-border hover:shadow-md transition-shadow"
+                  >
+                    <Image
+                      src={entry.photoUrl}
+                      alt={entry.title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </a>
+                </div>
+              )}
+              <div className="text-mist text-[0.95rem] leading-relaxed whitespace-pre-line flex-1">
+                {entry.body}
+              </div>
             </div>
           </article>
         ))}

@@ -22,7 +22,7 @@ import {
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   const params = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID!,
     client_secret: process.env.STRAVA_CLIENT_SECRET!,
@@ -71,7 +71,7 @@ async function getAthleteStats(
   return res.json();
 }
 
-async function getActivityPhotos(
+export async function getActivityPhotos(
   token: string,
   activityId: number
 ): Promise<StravaPhoto[]> {

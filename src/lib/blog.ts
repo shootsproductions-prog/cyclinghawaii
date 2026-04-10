@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { put, list, head } from "@vercel/blob";
+import { put, list } from "@vercel/blob";
 import { FormattedFeaturedRide, FormattedRide } from "@/types/strava";
+import { getAccessToken, getActivityPhotos } from "./strava";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -16,6 +17,7 @@ export interface BlogEntry {
   rideName: string;
   stravaUrl: string;
   mapImageUrl: string;
+  photoUrl?: string;
   distance: string;
   elevation: string;
   time: string;
@@ -50,37 +52,73 @@ async function saveEntries(entries: BlogEntry[]): Promise<void> {
   }
 }
 
+async function fetchFirstPhotoUrl(
+  token: string,
+  rideId: number,
+  existingPhotos?: FormattedFeaturedRide["photos"]
+): Promise<string | undefined> {
+  // Use featured ride's already-fetched photos if available
+  if (existingPhotos && existingPhotos.length > 0) {
+    const first = existingPhotos[0];
+    return first.urls?.["600"] || Object.values(first.urls)[0];
+  }
+
+  try {
+    const photos = await getActivityPhotos(token, rideId);
+    if (photos.length === 0) return undefined;
+    const first = photos[0];
+    return first.urls?.["600"] || Object.values(first.urls)[0];
+  } catch {
+    return undefined;
+  }
+}
+
 export async function generateBlogEntries(
   featured: FormattedFeaturedRide,
   rides: FormattedRide[]
 ): Promise<BlogEntry[]> {
   // Load existing archive
-  let existingEntries = await loadEntries();
+  const existingEntries = await loadEntries();
   const existingIds = new Set(existingEntries.map((e) => e.rideId));
 
   // Determine which rides need new entries (featured + recent)
   const ridesToCheck = [featured, ...rides.slice(0, 2)];
   const newRides = ridesToCheck.filter((r) => !existingIds.has(r.id));
 
-  if (newRides.length > 0 && process.env.ANTHROPIC_API_KEY) {
-    // Generate entries for new rides only
+  if (newRides.length > 0) {
+    // Get Strava token once for photo fetching
+    let stravaToken: string | null = null;
+    try {
+      stravaToken = await getAccessToken();
+    } catch {
+      // Photo fetching will be skipped
+    }
+
     for (const ride of newRides) {
-      try {
-        const entry = await generateEntry(ride);
-        existingEntries.unshift(entry); // newest first
-      } catch (error) {
-        console.error(`Blog generation failed for ride ${ride.id}:`, error);
-        existingEntries.unshift(makeFallbackEntry(ride));
+      // Fetch one photo for this ride
+      let photoUrl: string | undefined;
+      if (stravaToken) {
+        const isFeaturedRide = ride.id === featured.id;
+        photoUrl = await fetchFirstPhotoUrl(
+          stravaToken,
+          ride.id,
+          isFeaturedRide ? featured.photos : undefined
+        );
+      }
+
+      if (process.env.ANTHROPIC_API_KEY) {
+        try {
+          const entry = await generateEntry(ride, photoUrl);
+          existingEntries.unshift(entry);
+        } catch (error) {
+          console.error(`Blog generation failed for ride ${ride.id}:`, error);
+          existingEntries.unshift(makeFallbackEntry(ride, photoUrl));
+        }
+      } else {
+        existingEntries.unshift(makeFallbackEntry(ride, photoUrl));
       }
     }
 
-    // Save the updated archive
-    await saveEntries(existingEntries);
-  } else if (newRides.length > 0) {
-    // No API key — use fallback for new rides
-    for (const ride of newRides) {
-      existingEntries.unshift(makeFallbackEntry(ride));
-    }
     await saveEntries(existingEntries);
   }
 
@@ -91,7 +129,8 @@ export async function generateBlogEntries(
 }
 
 async function generateEntry(
-  ride: FormattedRide | FormattedFeaturedRide
+  ride: FormattedRide | FormattedFeaturedRide,
+  photoUrl?: string
 ): Promise<BlogEntry> {
   const prompt = `You are the witty narrator of Vini Pimenta's cycling journal "Log Files" on cyclinghawaii.com. Vini is a cyclist based in Maui, Hawaii who documents his rides across the Hawaiian Islands.
 
@@ -136,6 +175,7 @@ Rules:
     rideName: ride.name,
     stravaUrl: ride.stravaUrl,
     mapImageUrl: ride.mapImageUrl,
+    photoUrl,
     distance: ride.distance,
     elevation: ride.elevation,
     time: ride.time,
@@ -143,7 +183,7 @@ Rules:
   };
 }
 
-function makeFallbackEntry(ride: FormattedRide): BlogEntry {
+function makeFallbackEntry(ride: FormattedRide, photoUrl?: string): BlogEntry {
   return {
     rideId: ride.id,
     title: ride.name,
@@ -152,6 +192,7 @@ function makeFallbackEntry(ride: FormattedRide): BlogEntry {
     rideName: ride.name,
     stravaUrl: ride.stravaUrl,
     mapImageUrl: ride.mapImageUrl,
+    photoUrl,
     distance: ride.distance,
     elevation: ride.elevation,
     time: ride.time,
