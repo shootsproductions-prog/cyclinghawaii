@@ -15,7 +15,7 @@ export default function LogFiles({ entries, showArchiveLink }: Props) {
       <SectionHeader
         label="Log Files"
         title="The Ride Journal"
-        description="Auto-generated from Strava data. Written by a machine that wishes it could ride."
+        description="Auto-generated from Strava data. Written by a machine that wishes she could ride."
       />
 
       <div className="max-w-[800px] mx-auto space-y-16">

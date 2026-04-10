@@ -26,7 +26,7 @@ export default async function LogArchivePage() {
         </h1>
         <p className="text-mist max-w-md mx-auto">
           Every ride. Every story. Narrated by a machine that has never felt
-          the wind in its non-existent hair.
+          the wind in her non-existent hair.
         </p>
         <p className="text-mist/60 text-xs mt-2">
           {allEntries.length} {allEntries.length === 1 ? "entry" : "entries"} and counting

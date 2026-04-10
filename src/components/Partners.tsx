@@ -6,14 +6,19 @@ export default function Partners() {
       <SectionHeader
         label="Get In Touch"
         title="Let's Connect"
-        description="Questions, collaborations, or just a good route recommendation — Vini answers all of them."
+        description="Vini answers every message. Eventually."
       />
 
       <div className="max-w-[680px] mx-auto text-center">
-        <p className="text-mist text-base leading-relaxed mb-8">
+        <p className="text-mist text-base leading-relaxed mb-6">
           If your brand rides with cyclists who actually ride, there&apos;s
-          space here for you. Sponsorships, product placements, content
+          space here. Sponsorships, product placements, content
           collaborations — all welcome.
+        </p>
+        <p className="text-mist text-sm leading-relaxed mb-6">
+          Messages go through <span className="text-text font-medium">Laura</span>,
+          his assistant. She takes notes, triages, and makes sure nothing slips
+          through. She&apos;s thorough. Sometimes too thorough.
         </p>
         <p className="text-mist text-sm leading-relaxed mb-10 italic">
           Or skip the email and just meet him at the coffee shop. He&apos;ll
