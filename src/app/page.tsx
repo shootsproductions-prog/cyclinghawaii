@@ -29,15 +29,15 @@ export default async function Home() {
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
       <Divider />
-      <Challenge challenge={challenge} badges={badges} />
-      <Divider />
       <LiveTracker />
       <Divider />
-      <InstagramGrid />
+      <Challenge challenge={challenge} badges={badges} />
       <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
       <Scarab />
+      <Divider />
+      <InstagramGrid />
       <Divider />
       <YouTubePlaylist />
       <Divider />

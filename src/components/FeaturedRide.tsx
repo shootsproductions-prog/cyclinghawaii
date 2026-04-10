@@ -10,7 +10,7 @@ interface Props {
 
 export default function FeaturedRide({ ride }: Props) {
   return (
-    <section className="pt-28 pb-12 px-6">
+    <section id="rides" className="pt-28 pb-12 px-6">
       <SectionHeader
         label="Latest Ride"
         title="Fresh Off The Bike"

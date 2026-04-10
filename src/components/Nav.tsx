@@ -43,12 +43,12 @@ export default function Nav() {
         }`}
       >
         {[
-          { href: "#strava", label: "Rides" },
-          { href: "#scarab", label: "Scarab" },
+          { href: "#rides", label: "Rides" },
           { href: "#tracker", label: "Live Tracker" },
+          { href: "#log", label: "Log Files" },
+          { href: "#scarab", label: "Scarab" },
           { href: "#instagram", label: "Instagram" },
           { href: "#youtube", label: "YouTube" },
-          { href: "#log", label: "Log Files" },
           { href: "#partners", label: "Contact" },
         ].map((link) => (
           <li key={link.href}>

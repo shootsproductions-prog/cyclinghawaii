@@ -22,11 +22,11 @@ export default async function LogArchivePage() {
           Archive
         </div>
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold tracking-tight text-text mb-4">
-          Log Files
+          Journal
         </h1>
         <p className="text-mist max-w-md mx-auto">
-          Every ride. Every story. Narrated by a machine that has never felt
-          the wind in her non-existent hair.
+          Every ride. Every story. Laura reads the data and writes the truth.
+          Sometimes with receipts.
         </p>
         <p className="text-mist/60 text-xs mt-2">
           {allEntries.length} {allEntries.length === 1 ? "entry" : "entries"} and counting
