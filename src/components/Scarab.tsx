@@ -9,7 +9,7 @@ const specs = [
   { label: "Drivetrain", value: "SRAM Force AXS 1×12" },
   { label: "Gearing", value: "40T × 10–44T" },
   { label: "Wheels", value: "Bontrager Aeolus Elite Carbon" },
-  { label: "Tires", value: "45mm Tubeless" },
+  { label: "Tires", value: "Panaracer GravelKing 45mm Tubeless" },
   { label: "Brakes", value: "SRAM Hydraulic Disc" },
   { label: "Status", value: "Spoiled" },
 ];
