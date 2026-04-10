@@ -3,10 +3,13 @@ import {
   StravaActivity,
   StravaAthleteStats,
   StravaPhoto,
+  StravaSegmentEffortRaw,
   FormattedRide,
   FormattedFeaturedRide,
+  FormattedSegment,
   FormattedStats,
   MonthlyStats,
+  ElevationPoint,
   StravaData,
 } from "@/types/strava";
 import {
@@ -81,6 +84,89 @@ export async function getActivityPhotos(
   );
   if (!res.ok) return [];
   return res.json();
+}
+
+interface StravaStreamResponse {
+  distance?: { data: number[] };
+  altitude?: { data: number[] };
+}
+
+async function getActivityStreams(
+  token: string,
+  activityId: number
+): Promise<ElevationPoint[]> {
+  try {
+    const res = await fetch(
+      `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude&key_by_type=true`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return [];
+    const data: StravaStreamResponse = await res.json();
+    const distanceData = data.distance?.data || [];
+    const altitudeData = data.altitude?.data || [];
+    if (distanceData.length === 0 || altitudeData.length === 0) return [];
+
+    // Downsample to ~150 points for the chart
+    const points: ElevationPoint[] = [];
+    const step = Math.max(1, Math.floor(distanceData.length / 150));
+    for (let i = 0; i < distanceData.length; i += step) {
+      points.push({
+        distance: metersToMiles(distanceData[i]),
+        altitude: metersToFeet(altitudeData[i]),
+      });
+    }
+    // Always include the last point
+    const lastIdx = distanceData.length - 1;
+    points.push({
+      distance: metersToMiles(distanceData[lastIdx]),
+      altitude: metersToFeet(altitudeData[lastIdx]),
+    });
+
+    return points;
+  } catch (error) {
+    console.error("Streams fetch failed:", error);
+    return [];
+  }
+}
+
+interface StravaDetailedActivity extends StravaActivity {
+  segment_efforts?: StravaSegmentEffortRaw[];
+}
+
+async function getActivityDetail(
+  token: string,
+  activityId: number
+): Promise<StravaDetailedActivity | null> {
+  try {
+    const res = await fetch(
+      `${STRAVA_API_BASE}/activities/${activityId}?include_all_efforts=true`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+function formatSegments(
+  efforts: StravaSegmentEffortRaw[] | undefined
+): FormattedSegment[] {
+  if (!efforts) return [];
+  return efforts.slice(0, 6).map((e) => ({
+    id: e.id,
+    name: e.name,
+    time: formatTime(e.elapsed_time),
+    distanceMi: formatDistance(e.distance),
+    avgGrade: Math.round(e.segment.average_grade * 10) / 10,
+    avgWatts: e.average_watts ? Math.round(e.average_watts) : undefined,
+    avgHeartrate: e.average_heartrate
+      ? Math.round(e.average_heartrate)
+      : undefined,
+    isPR: e.pr_rank === 1,
+    isKOM: e.kom_rank === 1,
+    stravaUrl: `https://www.strava.com/segments/${e.segment.id}`,
+  }));
 }
 
 function decodePolyline(encoded: string): [number, number][] {
@@ -261,19 +347,22 @@ export async function getStravaData(): Promise<StravaData> {
 
     const stats = formatStats(athleteStats);
 
-    // Featured ride = first ride, with photos and large map
+    // Featured ride = first ride, with photos, large map, elevation, segments
     const featuredBase = allRides[0];
-    let photos: StravaPhoto[] = [];
-    try {
-      photos = await getActivityPhotos(token, featuredBase.id);
-    } catch {
-      // Photos are optional
-    }
+    const [photos, elevationProfile, detail] = await Promise.all([
+      getActivityPhotos(token, featuredBase.id).catch(() => []),
+      getActivityStreams(token, featuredBase.id),
+      getActivityDetail(token, featuredBase.id),
+    ]);
+
+    const segments = formatSegments(detail?.segment_efforts);
 
     const featured: FormattedFeaturedRide = {
       ...featuredBase,
       photos,
       largeMapImageUrl: buildMapImageUrl(featuredBase.polyline, 800, 400),
+      elevationProfile,
+      segments,
     };
 
     const monthlyStats = calculateMonthlyStats(activities);
@@ -312,6 +401,8 @@ function getFallbackData(): StravaData {
       ...fallbackRide,
       photos: [],
       largeMapImageUrl: "",
+      elevationProfile: [],
+      segments: [],
     },
     rides: [
       {

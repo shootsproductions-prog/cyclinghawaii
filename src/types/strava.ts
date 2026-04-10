@@ -78,9 +78,49 @@ export interface FormattedRide {
   stravaUrl: string;
 }
 
+export interface ElevationPoint {
+  distance: number; // miles
+  altitude: number; // feet
+}
+
+export interface StravaSegmentEffortRaw {
+  id: number;
+  name: string;
+  elapsed_time: number;
+  distance: number;
+  average_heartrate?: number;
+  average_watts?: number;
+  pr_rank?: number | null;
+  kom_rank?: number | null;
+  segment: {
+    id: number;
+    name: string;
+    average_grade: number;
+    maximum_grade: number;
+    elevation_high: number;
+    elevation_low: number;
+    distance: number;
+  };
+}
+
+export interface FormattedSegment {
+  id: number;
+  name: string;
+  time: string;
+  distanceMi: string;
+  avgGrade: number;
+  avgWatts?: number;
+  avgHeartrate?: number;
+  isPR: boolean;
+  isKOM: boolean;
+  stravaUrl: string;
+}
+
 export interface FormattedFeaturedRide extends FormattedRide {
   photos: StravaPhoto[];
   largeMapImageUrl: string;
+  elevationProfile: ElevationPoint[];
+  segments: FormattedSegment[];
 }
 
 export interface FormattedStats {

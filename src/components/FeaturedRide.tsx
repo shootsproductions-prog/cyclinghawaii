@@ -1,5 +1,8 @@
 import Image from "next/image";
 import { FormattedFeaturedRide } from "@/types/strava";
+import SectionHeader from "./SectionHeader";
+import ElevationProfile from "./ElevationProfile";
+import SegmentList from "./SegmentList";
 
 interface Props {
   ride: FormattedFeaturedRide;
@@ -7,9 +10,15 @@ interface Props {
 
 export default function FeaturedRide({ ride }: Props) {
   return (
-    <section className="pt-24 pb-12 px-6">
+    <section className="pt-28 pb-12 px-6">
+      <SectionHeader
+        label="Latest Ride"
+        title="Fresh Off The Bike"
+        description="Still catching his breath while this page loads."
+      />
+
       <div className="max-w-[960px] mx-auto">
-        {/* Header row — like Strava */}
+        {/* Ride header row */}
         <div className="flex items-start justify-between mb-6">
           <div>
             <a
@@ -34,7 +43,7 @@ export default function FeaturedRide({ ride }: Props) {
           </a>
         </div>
 
-        {/* Primary stats row — inline like Strava */}
+        {/* Primary stats row */}
         <div className="flex flex-wrap gap-x-8 gap-y-2 mb-6 pb-6 border-b border-border">
           <Stat value={ride.distance} unit="mi" label="Distance" />
           <Stat value={ride.time} label="Moving Time" />
@@ -64,7 +73,7 @@ export default function FeaturedRide({ ride }: Props) {
           href={ride.stravaUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block relative w-full aspect-[2.2/1] rounded-xl overflow-hidden border border-border mb-6 hover:shadow-lg transition-shadow"
+          className="block relative w-full aspect-[2.2/1] rounded-xl overflow-hidden border border-border mb-8 hover:shadow-lg transition-shadow"
         >
           {ride.largeMapImageUrl ? (
             <Image
@@ -82,28 +91,43 @@ export default function FeaturedRide({ ride }: Props) {
           )}
         </a>
 
+        {/* Elevation Profile */}
+        <ElevationProfile
+          points={ride.elevationProfile}
+          maxElevation={ride.elevation}
+          totalDistance={ride.distance}
+        />
+
+        {/* Segment Efforts */}
+        <SegmentList segments={ride.segments} />
+
         {/* Photos */}
         {ride.photos.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {ride.photos.map((photo) => {
-              const url = photo.urls?.["600"] || Object.values(photo.urls)[0];
-              if (!url) return null;
-              return (
-                <div
-                  key={photo.unique_id}
-                  className="flex-shrink-0 w-64 h-44 rounded-lg overflow-hidden border border-border"
-                >
-                  <Image
-                    src={url}
-                    alt={photo.caption || ride.name}
-                    width={256}
-                    height={176}
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
-                </div>
-              );
-            })}
+          <div>
+            <h3 className="text-xs font-semibold tracking-widest uppercase text-brand mb-3">
+              Photos
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {ride.photos.map((photo) => {
+                const url = photo.urls?.["600"] || Object.values(photo.urls)[0];
+                if (!url) return null;
+                return (
+                  <div
+                    key={photo.unique_id}
+                    className="flex-shrink-0 w-64 h-44 rounded-lg overflow-hidden border border-border"
+                  >
+                    <Image
+                      src={url}
+                      alt={photo.caption || ride.name}
+                      width={256}
+                      height={176}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -126,9 +150,7 @@ function Stat({
         <span className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-text">
           {value}
         </span>
-        {unit && (
-          <span className="text-sm text-mist">{unit}</span>
-        )}
+        {unit && <span className="text-sm text-mist">{unit}</span>}
       </div>
       <div className="text-xs text-mist">{label}</div>
     </div>
