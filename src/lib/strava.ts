@@ -11,6 +11,8 @@ import {
   FormattedStats,
   MonthlyStats,
   ElevationPoint,
+  StreamPoint,
+  MaxStats,
   StravaData,
 } from "@/types/strava";
 import {
@@ -101,46 +103,115 @@ export async function getActivityPhotos(
 interface StravaStreamResponse {
   distance?: { data: number[] };
   altitude?: { data: number[] };
+  heartrate?: { data: number[] };
+  watts?: { data: number[] };
+  velocity_smooth?: { data: number[] };
+  grade_smooth?: { data: number[] };
+}
+
+interface ActivityStreams {
+  elevation: ElevationPoint[];
+  heartrate: StreamPoint[];
+  power: StreamPoint[];
+  maxStats: MaxStats;
+}
+
+function downsample<T>(arr: T[], targetCount: number = 150): T[] {
+  if (arr.length <= targetCount) return arr;
+  const step = Math.max(1, Math.floor(arr.length / targetCount));
+  const result: T[] = [];
+  for (let i = 0; i < arr.length; i += step) result.push(arr[i]);
+  // Always include the last element
+  if (result[result.length - 1] !== arr[arr.length - 1]) {
+    result.push(arr[arr.length - 1]);
+  }
+  return result;
 }
 
 async function getActivityStreams(
   token: string,
   activityId: number
-): Promise<ElevationPoint[]> {
+): Promise<ActivityStreams> {
+  const empty: ActivityStreams = {
+    elevation: [],
+    heartrate: [],
+    power: [],
+    maxStats: { maxSpeed: 0, maxHeartrate: 0, maxPower: 0, maxGrade: 0 },
+  };
+
   try {
     const res = await fetch(
-      `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude&key_by_type=true`,
+      `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude,heartrate,watts,velocity_smooth,grade_smooth&key_by_type=true`,
       {
         headers: { Authorization: `Bearer ${token}` },
         next: { revalidate: 900, tags: [`strava-streams-${activityId}`] },
       }
     );
-    if (!res.ok) return [];
+    if (!res.ok) return empty;
+
     const data: StravaStreamResponse = await res.json();
     const distanceData = data.distance?.data || [];
     const altitudeData = data.altitude?.data || [];
-    if (distanceData.length === 0 || altitudeData.length === 0) return [];
+    const hrData = data.heartrate?.data || [];
+    const powerData = data.watts?.data || [];
+    const velocityData = data.velocity_smooth?.data || [];
+    const gradeData = data.grade_smooth?.data || [];
 
-    // Downsample to ~150 points for the chart
-    const points: ElevationPoint[] = [];
-    const step = Math.max(1, Math.floor(distanceData.length / 150));
-    for (let i = 0; i < distanceData.length; i += step) {
-      points.push({
-        distance: metersToMiles(distanceData[i]),
-        altitude: metersToFeet(altitudeData[i]),
-      });
-    }
-    // Always include the last point
-    const lastIdx = distanceData.length - 1;
-    points.push({
-      distance: metersToMiles(distanceData[lastIdx]),
-      altitude: metersToFeet(altitudeData[lastIdx]),
-    });
+    // Convert distance from meters to miles once
+    const distanceMi = distanceData.map(metersToMiles);
 
-    return points;
+    // Build elevation profile (distance → altitude in feet)
+    const elevationPoints: ElevationPoint[] =
+      distanceData.length > 0 && altitudeData.length > 0
+        ? downsample(
+            distanceData.map((_, i) => ({
+              distance: distanceMi[i] ?? 0,
+              altitude: metersToFeet(altitudeData[i] ?? 0),
+            }))
+          )
+        : [];
+
+    // Build heartrate profile (distance → bpm)
+    const heartratePoints: StreamPoint[] =
+      distanceData.length > 0 && hrData.length > 0
+        ? downsample(
+            distanceData.map((_, i) => ({
+              x: distanceMi[i] ?? 0,
+              y: hrData[i] ?? 0,
+            }))
+          )
+        : [];
+
+    // Build power profile (distance → watts)
+    const powerPoints: StreamPoint[] =
+      distanceData.length > 0 && powerData.length > 0
+        ? downsample(
+            distanceData.map((_, i) => ({
+              x: distanceMi[i] ?? 0,
+              y: powerData[i] ?? 0,
+            }))
+          )
+        : [];
+
+    // Max stats computed from raw streams (not downsampled)
+    const maxSpeedMps =
+      velocityData.length > 0 ? Math.max(...velocityData) : 0;
+    const maxStats: MaxStats = {
+      maxSpeed: maxSpeedMps * 2.23694, // m/s → mph
+      maxHeartrate: hrData.length > 0 ? Math.max(...hrData) : 0,
+      maxPower: powerData.length > 0 ? Math.max(...powerData) : 0,
+      maxGrade: gradeData.length > 0 ? Math.max(...gradeData) : 0,
+    };
+
+    return {
+      elevation: elevationPoints,
+      heartrate: heartratePoints,
+      power: powerPoints,
+      maxStats,
+    };
   } catch (error) {
     console.error("Streams fetch failed:", error);
-    return [];
+    return empty;
   }
 }
 
@@ -365,9 +436,9 @@ export async function getStravaData(): Promise<StravaData> {
 
     const stats = formatStats(athleteStats);
 
-    // Featured ride = first ride, with photos, large map, elevation, segments
+    // Featured ride = first ride, with photos, large map, elevation, streams
     const featuredBase = allRides[0];
-    const [photos, elevationProfile, detail] = await Promise.all([
+    const [photos, streams, detail] = await Promise.all([
       getActivityPhotos(token, featuredBase.id).catch(() => []),
       getActivityStreams(token, featuredBase.id),
       getActivityDetail(token, featuredBase.id),
@@ -379,7 +450,10 @@ export async function getStravaData(): Promise<StravaData> {
       ...featuredBase,
       photos,
       largeMapImageUrl: buildMapImageUrl(featuredBase.polyline, 800, 400),
-      elevationProfile,
+      elevationProfile: streams.elevation,
+      heartrateProfile: streams.heartrate,
+      powerProfile: streams.power,
+      maxStats: streams.maxStats,
       segments,
     };
 
@@ -420,6 +494,9 @@ function getFallbackData(): StravaData {
       photos: [],
       largeMapImageUrl: "",
       elevationProfile: [],
+      heartrateProfile: [],
+      powerProfile: [],
+      maxStats: { maxSpeed: 0, maxHeartrate: 0, maxPower: 0, maxGrade: 0 },
       segments: [],
     },
     rides: [

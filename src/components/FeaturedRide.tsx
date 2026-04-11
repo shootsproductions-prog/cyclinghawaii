@@ -2,7 +2,8 @@ import Image from "next/image";
 import { FormattedFeaturedRide } from "@/types/strava";
 import SectionHeader from "./SectionHeader";
 import ElevationProfile from "./ElevationProfile";
-import SegmentList from "./SegmentList";
+import MetricChart from "./MetricChart";
+import MaxStatsRow from "./MaxStatsRow";
 
 interface Props {
   ride: FormattedFeaturedRide;
@@ -98,8 +99,36 @@ export default function FeaturedRide({ ride }: Props) {
           totalDistance={ride.distance}
         />
 
-        {/* Segment Efforts */}
-        <SegmentList segments={ride.segments} />
+        {/* Heart Rate Profile */}
+        <MetricChart
+          title="Heart Rate"
+          points={ride.heartrateProfile}
+          unit="bpm"
+          colorFrom="#ef4444"
+          colorTo="#ef4444"
+          lineColor="#ef4444"
+          summaryLabel="Avg"
+          summaryValue={
+            ride.avgHeartrate ? `${Math.round(ride.avgHeartrate)} bpm` : undefined
+          }
+        />
+
+        {/* Power Profile */}
+        <MetricChart
+          title="Power"
+          points={ride.powerProfile}
+          unit="w"
+          colorFrom="#a855f7"
+          colorTo="#a855f7"
+          lineColor="#a855f7"
+          summaryLabel="Avg"
+          summaryValue={
+            ride.avgWatts ? `${Math.round(ride.avgWatts)} w` : undefined
+          }
+        />
+
+        {/* Max Stats */}
+        <MaxStatsRow stats={ride.maxStats} />
 
         {/* Photos */}
         {ride.photos.length > 0 && (

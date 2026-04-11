@@ -83,6 +83,18 @@ export interface ElevationPoint {
   altitude: number; // feet
 }
 
+export interface StreamPoint {
+  x: number; // distance (miles)
+  y: number; // metric value
+}
+
+export interface MaxStats {
+  maxSpeed: number; // mph
+  maxHeartrate: number; // bpm
+  maxPower: number; // watts
+  maxGrade: number; // %
+}
+
 export interface StravaSegmentEffortRaw {
   id: number;
   name: string;
@@ -120,6 +132,9 @@ export interface FormattedFeaturedRide extends FormattedRide {
   photos: StravaPhoto[];
   largeMapImageUrl: string;
   elevationProfile: ElevationPoint[];
+  heartrateProfile: StreamPoint[];
+  powerProfile: StreamPoint[];
+  maxStats: MaxStats;
   segments: FormattedSegment[];
 }
 
