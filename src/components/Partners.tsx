@@ -11,8 +11,8 @@ export default function Partners() {
 
       <div className="max-w-[680px] mx-auto text-center">
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8 mb-10 text-left">
-          <p className="font-[family-name:var(--font-caveat)] text-text text-2xl md:text-[1.7rem] leading-snug">
-            <span className="font-semibold">Laura here.</span>{" "}
+          <p className="text-mist text-[0.95rem] leading-relaxed">
+            <span className="font-semibold text-text">Laura here.</span>{" "}
             I&apos;m Vini&apos;s assistant, coach, moral support, and the one
             who remembers where he left his sunglasses. Send your message.
             I&apos;ll take notes, triage, and make sure it lands in his inbox.

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, Caveat } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import EasterEgg from "@/components/EasterEgg";
@@ -13,12 +13,6 @@ const inter = Inter({
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const caveat = Caveat({
-  variable: "--font-caveat",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -66,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${caveat.variable}`} style={{ backgroundColor: "#ffffff" }}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} style={{ backgroundColor: "#ffffff" }}>
       <body>
         <Nav />
         {children}
