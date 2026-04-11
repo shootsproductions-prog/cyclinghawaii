@@ -82,11 +82,14 @@ export async function generateBlogEntries(
   const existingEntries = await loadEntries();
   const existingIds = new Set(existingEntries.map((e) => e.rideId));
 
-  // Determine which rides need new entries (featured + recent)
-  const ridesToCheck = [featured, ...rides.slice(0, 2)];
+  // Check EVERY ride in the feed, not just top 3 — so rides don't slip
+  // through before being blogged. The archive should accumulate forever.
+  const ridesToCheck = [featured, ...rides];
   const newRides = ridesToCheck.filter((r) => !existingIds.has(r.id));
 
   if (newRides.length > 0) {
+    console.log(`Generating ${newRides.length} new blog entries`);
+
     // Get Strava token once for photo fetching
     let stravaToken: string | null = null;
     try {
@@ -110,32 +113,38 @@ export async function generateBlogEntries(
       if (process.env.ANTHROPIC_API_KEY) {
         try {
           const entry = await generateEntry(ride, photoUrl);
-          existingEntries.unshift(entry);
+          existingEntries.push(entry);
         } catch (error) {
           console.error(`Blog generation failed for ride ${ride.id}:`, error);
-          existingEntries.unshift(makeFallbackEntry(ride, photoUrl));
+          existingEntries.push(makeFallbackEntry(ride, photoUrl));
         }
       } else {
-        existingEntries.unshift(makeFallbackEntry(ride, photoUrl));
+        existingEntries.push(makeFallbackEntry(ride, photoUrl));
       }
     }
 
     await saveEntries(existingEntries);
   }
 
-  // Return all entries (for the archive page), sorted newest first
-  return existingEntries.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Sort by rideId descending (Strava assigns IDs sequentially, so higher = newer)
+  // This is more reliable than date string parsing
+  return [...existingEntries].sort((a, b) => b.rideId - a.rideId);
 }
 
 async function generateEntry(
   ride: FormattedRide | FormattedFeaturedRide,
   photoUrl?: string
 ): Promise<BlogEntry> {
-  const prompt = `You are the witty narrator of Vini Pimenta's cycling journal "Log Files" on cyclinghawaii.com. Vini is a cyclist based in Maui, Hawaii who documents his rides across the Hawaiian Islands.
+  const prompt = `You are Laura, Vini's AI assistant and coach, writing a journal entry about his latest ride on cyclinghawaii.com.
 
-Write a short, fun blog entry (3-4 paragraphs, ~150 words max) about this ride. Use 3rd person. Be witty, self-deprecating, and specific to the data. Reference actual numbers but make them funny. Hawaiian pidgin sprinkled in is welcome but don't overdo it.
+LAURA'S VOICE:
+- Third person about Vini ("he", "Vini"), but YOU are Laura narrating — occasionally first person asides are OK ("I told him...", "he didn't listen")
+- Dry, witty, unimpressed by default. Cycling is his baseline, not an achievement.
+- She roasts with love. Only rarely genuinely impressed — reserved for outstanding rides.
+- She knows he used to ride 500 miles/month and wants him back there.
+- Hawaiian references OK but sparingly.
+
+Write a 3-4 paragraph entry (~150 words max) about this specific ride. Reference the actual numbers but make them funny. End with something memorable.
 
 Ride data:
 - Name: ${ride.name}
@@ -152,12 +161,11 @@ ${ride.avgCadence ? `- Cadence: ${Math.round(ride.avgCadence)} rpm` : ""}
 ${ride.calories ? `- Calories: ${ride.calories}` : ""}
 
 Rules:
-- No emojis
-- No hashtags
-- Keep it under 150 words
-- Make the reader smile
-- End with something memorable
-- Don't start with the ride name`;
+- No emojis, no hashtags
+- Under 150 words
+- Don't start with the ride name
+- Don't start with "Laura here" — she's writing, not introducing
+- Be specific with numbers. Laura reads the data.`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",

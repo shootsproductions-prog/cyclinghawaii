@@ -13,7 +13,8 @@ import YouTubePlaylist from "@/components/YouTubePlaylist";
 import Partners from "@/components/Partners";
 import Divider from "@/components/Divider";
 
-export const revalidate = 3600;
+// Revalidate every 15 min so new rides (and Laura's fresh roasts) show up fast
+export const revalidate = 900;
 
 export default async function Home() {
   const { featured, rides, stats, monthlyStats } = await getStravaData();

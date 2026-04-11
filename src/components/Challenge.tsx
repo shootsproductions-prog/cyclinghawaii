@@ -73,7 +73,7 @@ export default function Challenge({ challenge, badges }: Props) {
             </div>
             <div>
               <span className="text-xs font-semibold text-strava uppercase tracking-wider">
-                Coach&apos;s Note
+                Laura&apos;s Note
               </span>
               <p className="text-mist text-sm mt-1 italic">
                 {challenge.coachNote}

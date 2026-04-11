@@ -40,7 +40,7 @@ export const getAccessToken = cache(async (): Promise<string> => {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
-    next: { revalidate: 3600 },
+    next: { revalidate: 900 },
   });
 
   if (!res.ok) {
@@ -55,13 +55,13 @@ export const getAccessToken = cache(async (): Promise<string> => {
 
 async function getRecentActivities(
   token: string,
-  count: number = 10
+  count: number = 30
 ): Promise<StravaActivity[]> {
   const res = await fetch(
     `${STRAVA_API_BASE}/athlete/activities?per_page=${count}`,
     {
       headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: 3600, tags: ["strava-activities"] },
+      next: { revalidate: 900, tags: ["strava-activities"] },
     }
   );
   if (!res.ok) throw new Error(`Strava activities fetch failed: ${res.status}`);
@@ -76,7 +76,7 @@ async function getAthleteStats(
     `${STRAVA_API_BASE}/athletes/${athleteId}/stats`,
     {
       headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: 3600, tags: ["strava-stats"] },
+      next: { revalidate: 900, tags: ["strava-stats"] },
     }
   );
   if (!res.ok) throw new Error(`Strava stats fetch failed: ${res.status}`);
@@ -91,7 +91,7 @@ export async function getActivityPhotos(
     `${STRAVA_API_BASE}/activities/${activityId}/photos?size=600&photo_sources=true`,
     {
       headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: 3600, tags: [`strava-photos-${activityId}`] },
+      next: { revalidate: 900, tags: [`strava-photos-${activityId}`] },
     }
   );
   if (!res.ok) return [];
@@ -112,7 +112,7 @@ async function getActivityStreams(
       `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude&key_by_type=true`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        next: { revalidate: 3600, tags: [`strava-streams-${activityId}`] },
+        next: { revalidate: 900, tags: [`strava-streams-${activityId}`] },
       }
     );
     if (!res.ok) return [];
@@ -157,7 +157,7 @@ async function getActivityDetail(
       `${STRAVA_API_BASE}/activities/${activityId}?include_all_efforts=true`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        next: { revalidate: 3600, tags: [`strava-detail-${activityId}`] },
+        next: { revalidate: 900, tags: [`strava-detail-${activityId}`] },
       }
     );
     if (!res.ok) return null;
@@ -356,7 +356,7 @@ export async function getStravaData(): Promise<StravaData> {
   try {
     const token = await getAccessToken();
     const [activities, athleteStats] = await Promise.all([
-      getRecentActivities(token, 10),
+      getRecentActivities(token, 30),
       getAthleteStats(token, process.env.STRAVA_ATHLETE_ID!),
     ]);
 
