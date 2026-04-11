@@ -14,8 +14,8 @@ export default function LogFiles({ entries, showArchiveLink }: Props) {
     <section id="log" className="py-20 px-6">
       <SectionHeader
         label="Log Files"
-        title="Journal"
-        description="Laura here. I read his telemetry and write the truth. He doesn't always love it."
+        title="Laura's Log"
+        description="I read his telemetry and write the truth. He doesn't always love it."
       />
 
       <div className="max-w-[800px] mx-auto space-y-16">

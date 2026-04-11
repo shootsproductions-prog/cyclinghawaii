@@ -4,9 +4,9 @@ import { generateBlogEntries } from "@/lib/blog";
 import LogFiles from "@/components/LogFiles";
 
 export const metadata: Metadata = {
-  title: "Log Files — Cycling Hawaii",
+  title: "Laura's Log — Cycling Hawaii",
   description:
-    "The complete ride journal. Every ride Vini has ever documented, narrated by AI with questionable comedic timing.",
+    "The complete ride log. Every ride Vini has ever done, documented by Laura with varying degrees of patience.",
 };
 
 export const revalidate = 3600;
@@ -22,11 +22,11 @@ export default async function LogArchivePage() {
           Archive
         </div>
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold tracking-tight text-text mb-4">
-          Journal
+          Laura&apos;s Log
         </h1>
         <p className="text-mist max-w-md mx-auto">
-          Every ride. Every story. Laura reads the data and writes the truth.
-          Sometimes with receipts.
+          Every ride. Every story. The complete log — documented, dated,
+          and occasionally passive-aggressive.
         </p>
         <p className="text-mist/60 text-xs mt-2">
           {allEntries.length} {allEntries.length === 1 ? "entry" : "entries"} and counting
