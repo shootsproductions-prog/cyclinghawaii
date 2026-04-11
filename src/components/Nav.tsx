@@ -11,6 +11,7 @@ const links = [
   { hash: "scarab", label: "Scarab" },
   { hash: "instagram", label: "Instagram" },
   { hash: "youtube", label: "YouTube" },
+  { hash: "spotify", label: "Spotify" },
   { hash: "partners", label: "Contact" },
 ];
 

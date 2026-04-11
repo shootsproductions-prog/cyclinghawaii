@@ -10,6 +10,7 @@ import LiveTracker from "@/components/LiveTracker";
 import InstagramGrid from "@/components/InstagramGrid";
 import LogFiles from "@/components/LogFiles";
 import YouTubePlaylist from "@/components/YouTubePlaylist";
+import SpotifyPlaylist from "@/components/SpotifyPlaylist";
 import Partners from "@/components/Partners";
 import Divider from "@/components/Divider";
 
@@ -41,6 +42,8 @@ export default async function Home() {
       <InstagramGrid />
       <Divider />
       <YouTubePlaylist />
+      <Divider />
+      <SpotifyPlaylist />
       <Divider />
       <Partners />
     </main>
