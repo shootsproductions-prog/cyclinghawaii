@@ -28,11 +28,9 @@ function getBikePhoto(name: string): string {
 
 export default function Scarab() {
   const heroPhoto = getBikePhoto("scarab-hero");
-  const gallery = [
-    getBikePhoto("scarab-1"),
-    getBikePhoto("scarab-2"),
-    getBikePhoto("scarab-3"),
-  ];
+  const grid = Array.from({ length: 9 }, (_, i) =>
+    getBikePhoto(`scarab-grid-${i + 1}`)
+  );
 
   return (
     <section id="scarab" className="py-20 px-6 bg-surface">
@@ -81,18 +79,19 @@ export default function Scarab() {
           </div>
         </div>
 
-        {/* Gallery */}
-        <div className="grid grid-cols-3 gap-3">
-          {gallery.map((src, i) => (
+        {/* 3x3 photo grid */}
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          {grid.map((src, i) => (
             <div
               key={i}
-              className="relative aspect-[4/3] rounded-xl overflow-hidden border border-border bg-card"
+              className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-card"
             >
               <Image
                 src={src}
                 alt={`Scarab — photo ${i + 1}`}
                 fill
-                className="object-cover"
+                sizes="(min-width: 768px) 320px, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                 unoptimized
               />
             </div>
