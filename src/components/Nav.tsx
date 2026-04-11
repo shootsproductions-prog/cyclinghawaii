@@ -1,17 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
+
+const links = [
+  { hash: "rides", label: "Rides" },
+  { hash: "tracker", label: "Live Tracker" },
+  { hash: "log", label: "Log Files" },
+  { hash: "scarab", label: "Scarab" },
+  { hash: "instagram", label: "Instagram" },
+  { hash: "youtube", label: "YouTube" },
+  { hash: "partners", label: "Contact" },
+];
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // When on the home page, use #hash for smooth-scroll.
+  // When on any other page (e.g. /log), use /#hash so the browser navigates
+  // back to home and jumps to the section.
+  const hrefFor = (hash: string) => (isHome ? `#${hash}` : `/#${hash}`);
 
   return (
     <nav
@@ -21,7 +39,7 @@ export default function Nav() {
           : "bg-bg/80 backdrop-blur-sm"
       }`}
     >
-      <a href="#" className="flex items-center gap-3 no-underline">
+      <a href="/" className="flex items-center gap-3 no-underline">
         <Image
           src="/logo-orange.png"
           alt="Cycling Hawaii"
@@ -42,18 +60,10 @@ export default function Nav() {
             : "max-md:hidden"
         }`}
       >
-        {[
-          { href: "#rides", label: "Rides" },
-          { href: "#tracker", label: "Live Tracker" },
-          { href: "#log", label: "Log Files" },
-          { href: "#scarab", label: "Scarab" },
-          { href: "#instagram", label: "Instagram" },
-          { href: "#youtube", label: "YouTube" },
-          { href: "#partners", label: "Contact" },
-        ].map((link) => (
-          <li key={link.href}>
+        {links.map((link) => (
+          <li key={link.hash}>
             <a
-              href={link.href}
+              href={hrefFor(link.hash)}
               onClick={() => setMenuOpen(false)}
               className="text-mist text-sm font-medium uppercase tracking-widest no-underline transition-colors hover:text-text"
             >
