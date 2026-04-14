@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { put, list } from "@vercel/blob";
 import { FormattedFeaturedRide, FormattedRide } from "@/types/strava";
 import { getAccessToken, getActivityPhotos } from "./strava";
+import { generateAndSaveAudio } from "./voice";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -18,6 +19,7 @@ export interface BlogEntry {
   stravaUrl: string;
   mapImageUrl: string;
   photoUrl?: string;
+  audioUrl?: string;
   distance: string;
   elevation: string;
   time: string;
@@ -74,6 +76,21 @@ async function fetchFirstPhotoUrl(
   }
 }
 
+// How many existing entries we'll backfill audio for per render.
+// Keeps each build under the timeout window.
+const AUDIO_BACKFILL_BATCH = 5;
+
+async function maybeGenerateAudio(
+  rideId: number,
+  text: string
+): Promise<string | undefined> {
+  if (!process.env.ELEVENLABS_API_KEY || !process.env.ELEVENLABS_VOICE_ID) {
+    return undefined;
+  }
+  const url = await generateAndSaveAudio(rideId, text);
+  return url ?? undefined;
+}
+
 export async function generateBlogEntries(
   featured: FormattedFeaturedRide,
   rides: FormattedRide[]
@@ -86,6 +103,8 @@ export async function generateBlogEntries(
   // through before being blogged. The archive should accumulate forever.
   const ridesToCheck = [featured, ...rides];
   const newRides = ridesToCheck.filter((r) => !existingIds.has(r.id));
+
+  let dirty = false;
 
   if (newRides.length > 0) {
     console.log(`Generating ${newRides.length} new blog entries`);
@@ -110,24 +129,58 @@ export async function generateBlogEntries(
         );
       }
 
+      let entry: BlogEntry;
       if (process.env.ANTHROPIC_API_KEY) {
         try {
-          const entry = await generateEntry(ride, photoUrl);
-          existingEntries.push(entry);
+          entry = await generateEntry(ride, photoUrl);
         } catch (error) {
           console.error(`Blog generation failed for ride ${ride.id}:`, error);
-          existingEntries.push(makeFallbackEntry(ride, photoUrl));
+          entry = makeFallbackEntry(ride, photoUrl);
         }
       } else {
-        existingEntries.push(makeFallbackEntry(ride, photoUrl));
+        entry = makeFallbackEntry(ride, photoUrl);
+      }
+
+      // Generate audio for the new entry
+      try {
+        entry.audioUrl = await maybeGenerateAudio(ride.id, entry.body);
+      } catch (error) {
+        console.error(`Audio generation failed for ride ${ride.id}:`, error);
+      }
+
+      existingEntries.push(entry);
+      dirty = true;
+    }
+  }
+
+  // Backfill audio for existing entries that don't have it yet.
+  // Limit to N per render so builds don't time out.
+  const needingAudio = existingEntries.filter((e) => !e.audioUrl);
+  if (needingAudio.length > 0 && process.env.ELEVENLABS_API_KEY) {
+    const batch = needingAudio.slice(0, AUDIO_BACKFILL_BATCH);
+    console.log(
+      `Backfilling audio for ${batch.length} entries (${
+        needingAudio.length
+      } remaining)`
+    );
+    for (const entry of batch) {
+      try {
+        const url = await maybeGenerateAudio(entry.rideId, entry.body);
+        if (url) {
+          entry.audioUrl = url;
+          dirty = true;
+        }
+      } catch (error) {
+        console.error(`Audio backfill failed for ride ${entry.rideId}:`, error);
       }
     }
+  }
 
+  if (dirty) {
     await saveEntries(existingEntries);
   }
 
   // Sort by rideId descending (Strava assigns IDs sequentially, so higher = newer)
-  // This is more reliable than date string parsing
   return [...existingEntries].sort((a, b) => b.rideId - a.rideId);
 }
 

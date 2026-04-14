@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { BlogEntry } from "@/lib/blog";
 import SectionHeader from "./SectionHeader";
+import ListenButton from "./ListenButton";
 
 interface Props {
   entries: BlogEntry[];
@@ -40,18 +41,19 @@ export default function LogFiles({ entries, showArchiveLink }: Props) {
             )}
 
             {/* Header */}
-            <div className="flex items-baseline justify-between mb-2">
-              <a
-                href={entry.stravaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-text hover:text-strava transition-colors no-underline"
-              >
-                {entry.title}
-              </a>
-              <span className="text-xs text-mist shrink-0 ml-4">
-                {entry.date}
-              </span>
+            <div className="flex items-center justify-between mb-2 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <a
+                  href={entry.stravaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-text hover:text-strava transition-colors no-underline truncate"
+                >
+                  {entry.title}
+                </a>
+                {entry.audioUrl && <ListenButton audioUrl={entry.audioUrl} />}
+              </div>
+              <span className="text-xs text-mist shrink-0">{entry.date}</span>
             </div>
 
             {/* Stats badge */}
