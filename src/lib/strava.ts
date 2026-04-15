@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { put, list } from "@vercel/blob";
 import { getWeatherForRide } from "./weather";
 import {
   StravaTokenResponse,
@@ -600,6 +601,35 @@ function calculateMonthlyStats(activities: StravaActivity[]): MonthlyStats {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Stale-data safety net — on Strava failure, serve last good snapshot
+// ─────────────────────────────────────────────────────────────────────
+const STRAVA_SNAPSHOT_KEY = "strava-snapshot.json";
+
+async function saveSnapshot(data: StravaData): Promise<void> {
+  try {
+    await put(STRAVA_SNAPSHOT_KEY, JSON.stringify(data), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+  } catch (error) {
+    console.error("Failed to save Strava snapshot:", error);
+  }
+}
+
+async function loadSnapshot(): Promise<StravaData | null> {
+  try {
+    const blobs = await list({ prefix: STRAVA_SNAPSHOT_KEY });
+    if (blobs.blobs.length === 0) return null;
+    const res = await fetch(blobs.blobs[0].url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function getStravaData(): Promise<StravaData> {
   if (
     !process.env.STRAVA_CLIENT_ID ||
@@ -689,9 +719,30 @@ export async function getStravaData(): Promise<StravaData> {
       bike = await getBikeStats(token, gearId);
     }
 
-    return { featured, rides: allRides.slice(1), stats, monthlyStats, bike };
+    const result: StravaData = {
+      featured,
+      rides: allRides.slice(1),
+      stats,
+      monthlyStats,
+      bike,
+    };
+
+    // Cache the successful snapshot so we have something real to serve
+    // next time Strava is rate-limited or otherwise unavailable.
+    saveSnapshot(result).catch(() => {});
+
+    return result;
   } catch (error) {
-    console.error("Strava API error, using fallback data:", error);
+    console.error(
+      "Strava API error, falling back to last snapshot:",
+      error
+    );
+    const snapshot = await loadSnapshot();
+    if (snapshot) {
+      console.log("Serving cached Strava snapshot");
+      return snapshot;
+    }
+    console.log("No snapshot available, using hardcoded fallback");
     return getFallbackData();
   }
 }
