@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getWeatherForRide } from "./weather";
 import {
   StravaTokenResponse,
   StravaActivity,
@@ -13,6 +14,10 @@ import {
   ElevationPoint,
   StreamPoint,
   MaxStats,
+  RideAnalytics,
+  ZoneBucket,
+  BestEffort,
+  BikeStats,
   StravaData,
 } from "@/types/strava";
 import {
@@ -107,6 +112,8 @@ interface StravaStreamResponse {
   watts?: { data: number[] };
   velocity_smooth?: { data: number[] };
   grade_smooth?: { data: number[] };
+  cadence?: { data: number[] };
+  time?: { data: number[] };
 }
 
 interface ActivityStreams {
@@ -114,6 +121,13 @@ interface ActivityStreams {
   heartrate: StreamPoint[];
   power: StreamPoint[];
   maxStats: MaxStats;
+  // Raw arrays for analytics calculations
+  raw: {
+    hr: number[];
+    power: number[];
+    cadence: number[];
+    time: number[];
+  };
 }
 
 function downsample<T>(arr: T[], targetCount: number = 150): T[] {
@@ -137,11 +151,12 @@ async function getActivityStreams(
     heartrate: [],
     power: [],
     maxStats: { maxSpeed: 0, maxHeartrate: 0, maxPower: 0, maxGrade: 0 },
+    raw: { hr: [], power: [], cadence: [], time: [] },
   };
 
   try {
     const res = await fetch(
-      `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude,heartrate,watts,velocity_smooth,grade_smooth&key_by_type=true`,
+      `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=distance,altitude,heartrate,watts,velocity_smooth,grade_smooth,cadence,time&key_by_type=true`,
       {
         headers: { Authorization: `Bearer ${token}` },
         next: { revalidate: 900, tags: [`strava-streams-${activityId}`] },
@@ -156,6 +171,8 @@ async function getActivityStreams(
     const powerData = data.watts?.data || [];
     const velocityData = data.velocity_smooth?.data || [];
     const gradeData = data.grade_smooth?.data || [];
+    const cadenceData = data.cadence?.data || [];
+    const timeData = data.time?.data || [];
 
     // Convert distance from meters to miles once
     const distanceMi = distanceData.map(metersToMiles);
@@ -208,6 +225,12 @@ async function getActivityStreams(
       heartrate: heartratePoints,
       power: powerPoints,
       maxStats,
+      raw: {
+        hr: hrData,
+        power: powerData,
+        cadence: cadenceData,
+        time: timeData,
+      },
     };
   } catch (error) {
     console.error("Streams fetch failed:", error);
@@ -215,8 +238,172 @@ async function getActivityStreams(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Analytics — calculate richer ride insights from raw streams
+// ─────────────────────────────────────────────────────────────────────
+
+const HR_MAX_ESTIMATE = 190; // approximation for Vini; could be refined later
+
+/** Time in HR zones (Z1-Z5) using % of max HR. */
+function calculateHrZones(hrData: number[], timeData: number[]): ZoneBucket[] {
+  if (hrData.length === 0 || hrData.length !== timeData.length) {
+    return [];
+  }
+
+  // Zones as % of max HR: Z1 <60, Z2 60-70, Z3 70-80, Z4 80-90, Z5 >=90
+  const buckets = [0, 0, 0, 0, 0]; // seconds in each zone
+  for (let i = 1; i < hrData.length; i++) {
+    const dt = timeData[i] - timeData[i - 1];
+    const pct = (hrData[i] / HR_MAX_ESTIMATE) * 100;
+    let zone = 0;
+    if (pct < 60) zone = 0;
+    else if (pct < 70) zone = 1;
+    else if (pct < 80) zone = 2;
+    else if (pct < 90) zone = 3;
+    else zone = 4;
+    buckets[zone] += dt;
+  }
+
+  const totalSec = buckets.reduce((s, v) => s + v, 0) || 1;
+  return buckets.map((sec, i) => ({
+    zone: i + 1,
+    pct: Math.round((sec / totalSec) * 100),
+    minutes: Math.round(sec / 60),
+  }));
+}
+
+/** % HR climbed from first half to second half (cardiac drift). */
+function calculateHrDrift(hrData: number[]): number {
+  if (hrData.length < 20) return 0;
+  const mid = Math.floor(hrData.length / 2);
+  const first = hrData.slice(0, mid).filter((v) => v > 0);
+  const second = hrData.slice(mid).filter((v) => v > 0);
+  if (first.length === 0 || second.length === 0) return 0;
+  const avg1 = first.reduce((s, v) => s + v, 0) / first.length;
+  const avg2 = second.reduce((s, v) => s + v, 0) / second.length;
+  if (avg1 === 0) return 0;
+  return Math.round(((avg2 - avg1) / avg1) * 100);
+}
+
+/** Coggan-style Normalized Power: 4th-power weighted average of 30-sec rolling. */
+function calculateNormalizedPower(powerData: number[]): number {
+  if (powerData.length < 30) return 0;
+  const window = 30;
+  const rolling: number[] = [];
+  for (let i = window - 1; i < powerData.length; i++) {
+    let sum = 0;
+    for (let j = 0; j < window; j++) sum += powerData[i - j];
+    rolling.push(sum / window);
+  }
+  const fourthPower =
+    rolling.reduce((s, v) => s + Math.pow(v, 4), 0) / rolling.length;
+  return Math.round(Math.pow(fourthPower, 0.25));
+}
+
+/** First-half vs second-half avg power. */
+function calculateHalfSplits(powerData: number[]): {
+  first: number;
+  second: number;
+} {
+  if (powerData.length < 20) return { first: 0, second: 0 };
+  const mid = Math.floor(powerData.length / 2);
+  const first = powerData.slice(0, mid).filter((v) => v > 0);
+  const second = powerData.slice(mid).filter((v) => v > 0);
+  return {
+    first: first.length
+      ? Math.round(first.reduce((s, v) => s + v, 0) / first.length)
+      : 0,
+    second: second.length
+      ? Math.round(second.reduce((s, v) => s + v, 0) / second.length)
+      : 0,
+  };
+}
+
+function calculateRideAnalytics(
+  activity: StravaActivity,
+  raw: ActivityStreams["raw"],
+  bestEfforts: BestEffort[]
+): RideAnalytics {
+  const np = calculateNormalizedPower(raw.power);
+  const splits = calculateHalfSplits(raw.power);
+  const movingTimeSec = activity.moving_time;
+  const elapsedTimeSec = activity.elapsed_time;
+
+  return {
+    hrZones: calculateHrZones(raw.hr, raw.time),
+    hrDrift: calculateHrDrift(raw.hr),
+    powerVariability:
+      activity.average_watts && np
+        ? Math.round((np / activity.average_watts) * 100) / 100
+        : 0,
+    normalizedPower: np,
+    firstHalfAvgPower: splits.first,
+    secondHalfAvgPower: splits.second,
+    movingTimeSec,
+    elapsedTimeSec,
+    stoppedTimeSec: Math.max(elapsedTimeSec - movingTimeSec, 0),
+    sufferScore: activity.suffer_score,
+    bestEfforts,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Best efforts (from detailed activity)
+// ─────────────────────────────────────────────────────────────────────
+
+interface StravaBestEffortRaw {
+  name: string;
+  elapsed_time: number;
+  pr_rank?: number | null;
+}
+
+function formatBestEfforts(
+  efforts: StravaBestEffortRaw[] | undefined
+): BestEffort[] {
+  if (!efforts) return [];
+  return efforts.slice(0, 6).map((e) => ({
+    name: e.name,
+    time: formatTime(e.elapsed_time),
+    isPR: e.pr_rank === 1,
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Bike (gear) stats
+// ─────────────────────────────────────────────────────────────────────
+
+interface StravaGearResponse {
+  id: string;
+  name: string;
+  distance: number; // meters
+  brand_name?: string;
+  model_name?: string;
+}
+
+export async function getBikeStats(
+  token: string,
+  gearId: string
+): Promise<BikeStats | null> {
+  try {
+    const res = await fetch(`${STRAVA_API_BASE}/gear/${gearId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600, tags: [`strava-gear-${gearId}`] },
+    });
+    if (!res.ok) return null;
+    const data: StravaGearResponse = await res.json();
+    return {
+      name: data.name || "Bike",
+      totalMiles: Math.round(metersToMiles(data.distance)),
+    };
+  } catch (error) {
+    console.error("Gear fetch failed:", error);
+    return null;
+  }
+}
+
 interface StravaDetailedActivity extends StravaActivity {
   segment_efforts?: StravaSegmentEffortRaw[];
+  best_efforts?: StravaBestEffortRaw[];
 }
 
 async function getActivityDetail(
@@ -438,6 +625,8 @@ export async function getStravaData(): Promise<StravaData> {
 
     // Featured ride = first ride, with photos, large map, elevation, streams
     const featuredBase = allRides[0];
+    const featuredActivity = activities.find((a) => a.id === featuredBase.id);
+
     const [photos, streams, detail] = await Promise.all([
       getActivityPhotos(token, featuredBase.id).catch(() => []),
       getActivityStreams(token, featuredBase.id),
@@ -445,6 +634,37 @@ export async function getStravaData(): Promise<StravaData> {
     ]);
 
     const segments = formatSegments(detail?.segment_efforts);
+    const bestEfforts = formatBestEfforts(detail?.best_efforts);
+
+    // Compute analytics from raw streams + activity summary
+    const analytics: RideAnalytics = featuredActivity
+      ? calculateRideAnalytics(featuredActivity, streams.raw, bestEfforts)
+      : {
+          hrZones: [],
+          hrDrift: 0,
+          powerVariability: 0,
+          normalizedPower: 0,
+          firstHalfAvgPower: 0,
+          secondHalfAvgPower: 0,
+          movingTimeSec: 0,
+          elapsedTimeSec: 0,
+          stoppedTimeSec: 0,
+          bestEfforts,
+        };
+
+    // Weather (Open-Meteo, free)
+    let weather: import("@/types/strava").WeatherData | undefined;
+    if (
+      featuredActivity?.start_latlng &&
+      featuredActivity.start_latlng.length === 2
+    ) {
+      const w = await getWeatherForRide(
+        featuredActivity.start_latlng[0],
+        featuredActivity.start_latlng[1],
+        featuredActivity.start_date_local
+      );
+      if (w) weather = w;
+    }
 
     const featured: FormattedFeaturedRide = {
       ...featuredBase,
@@ -454,11 +674,22 @@ export async function getStravaData(): Promise<StravaData> {
       heartrateProfile: streams.heartrate,
       powerProfile: streams.power,
       maxStats: streams.maxStats,
+      analytics,
+      weather,
       segments,
     };
 
     const monthlyStats = calculateMonthlyStats(activities);
-    return { featured, rides: allRides.slice(1), stats, monthlyStats };
+
+    // Bike (Scarab) lifetime stats — find the most common gear_id across recent rides
+    let bike: BikeStats | null = null;
+    const gearId =
+      activities.find((a) => a.gear_id)?.gear_id || null;
+    if (gearId) {
+      bike = await getBikeStats(token, gearId);
+    }
+
+    return { featured, rides: allRides.slice(1), stats, monthlyStats, bike };
   } catch (error) {
     console.error("Strava API error, using fallback data:", error);
     return getFallbackData();
@@ -497,6 +728,18 @@ function getFallbackData(): StravaData {
       heartrateProfile: [],
       powerProfile: [],
       maxStats: { maxSpeed: 0, maxHeartrate: 0, maxPower: 0, maxGrade: 0 },
+      analytics: {
+        hrZones: [],
+        hrDrift: 0,
+        powerVariability: 0,
+        normalizedPower: 0,
+        firstHalfAvgPower: 0,
+        secondHalfAvgPower: 0,
+        movingTimeSec: 0,
+        elapsedTimeSec: 0,
+        stoppedTimeSec: 0,
+        bestEfforts: [],
+      },
       segments: [],
     },
     rides: [
@@ -539,5 +782,6 @@ function getFallbackData(): StravaData {
       calories: 2800,
       avgSpeedMph: 12.5,
     },
+    bike: null,
   };
 }

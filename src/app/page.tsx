@@ -18,7 +18,7 @@ import Divider from "@/components/Divider";
 export const revalidate = 900;
 
 export default async function Home() {
-  const { featured, rides, stats, monthlyStats } = await getStravaData();
+  const { featured, rides, stats, monthlyStats, bike } = await getStravaData();
   const [blogEntries, challenge] = await Promise.all([
     generateBlogEntries(featured, rides),
     getChallenge(monthlyStats),
@@ -37,7 +37,7 @@ export default async function Home() {
       <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
-      <Scarab />
+      <Scarab bike={bike} />
       <Divider />
       <InstagramGrid />
       <Divider />

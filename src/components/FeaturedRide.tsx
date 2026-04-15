@@ -3,13 +3,14 @@ import { FormattedFeaturedRide } from "@/types/strava";
 import SectionHeader from "./SectionHeader";
 import ElevationProfile from "./ElevationProfile";
 import MetricChart from "./MetricChart";
-import MaxStatsRow from "./MaxStatsRow";
+import RideDashboard from "./RideDashboard";
 
 interface Props {
   ride: FormattedFeaturedRide;
 }
 
 export default function FeaturedRide({ ride }: Props) {
+  const w = ride.weather;
   return (
     <section id="rides" className="pt-28 pb-12 px-6">
       <SectionHeader
@@ -20,8 +21,8 @@ export default function FeaturedRide({ ride }: Props) {
 
       <div className="max-w-[960px] mx-auto">
         {/* Ride header row */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
+        <div className="flex items-start justify-between mb-6 gap-4">
+          <div className="min-w-0">
             <a
               href={ride.stravaUrl}
               target="_blank"
@@ -30,8 +31,30 @@ export default function FeaturedRide({ ride }: Props) {
             >
               {ride.name}
             </a>
-            <p className="text-sm text-mist mt-1">
-              {ride.date} &middot; Maui County, Hawaii
+            <p className="text-sm text-mist mt-1 flex items-center gap-2 flex-wrap">
+              <span>{ride.date}</span>
+              <span className="text-mist/40">·</span>
+              <span>Maui County, Hawaii</span>
+              {w && (
+                <>
+                  <span className="text-mist/40">·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                    </svg>
+                    {w.tempF}° {w.conditions}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <a
@@ -44,27 +67,14 @@ export default function FeaturedRide({ ride }: Props) {
           </a>
         </div>
 
-        {/* Primary stats row */}
-        <div className="flex flex-wrap gap-x-8 gap-y-2 mb-6 pb-6 border-b border-border">
+        {/* Headline stats */}
+        <div className="flex flex-wrap gap-x-8 gap-y-2 mb-8 pb-6 border-b border-border">
           <Stat value={ride.distance} unit="mi" label="Distance" />
           <Stat value={ride.time} label="Moving Time" />
           <Stat value={ride.elevation} unit="ft" label="Elevation" />
           <Stat value={ride.averageSpeed} unit="mi/h" label="Avg Speed" />
-        </div>
-
-        {/* Secondary stats row */}
-        <div className="flex flex-wrap gap-x-8 gap-y-2 mb-8 pb-6 border-b border-border">
-          {ride.avgWatts && (
-            <Stat value={`${Math.round(ride.avgWatts)}`} unit="w" label="Avg Power" />
-          )}
-          {ride.avgCadence && (
-            <Stat value={`${Math.round(ride.avgCadence)}`} unit="rpm" label="Cadence" />
-          )}
-          {ride.avgHeartrate && (
-            <Stat value={`${Math.round(ride.avgHeartrate)}`} unit="bpm" label="Avg HR" />
-          )}
-          {ride.achievements > 0 && (
-            <Stat value={ride.achievements.toString()} label="Achievements" />
+          {ride.calories > 0 && (
+            <Stat value={ride.calories.toLocaleString()} label="Calories" />
           )}
           <Stat value={ride.kudos.toString()} label="Kudos" />
         </div>
@@ -74,7 +84,7 @@ export default function FeaturedRide({ ride }: Props) {
           href={ride.stravaUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block relative w-full aspect-[2.2/1] rounded-xl overflow-hidden border border-border mb-8 hover:shadow-lg transition-shadow"
+          className="block relative w-full aspect-[2.2/1] rounded-xl overflow-hidden border border-border mb-10 hover:shadow-lg transition-shadow"
         >
           {ride.largeMapImageUrl ? (
             <Image
@@ -92,14 +102,18 @@ export default function FeaturedRide({ ride }: Props) {
           )}
         </a>
 
-        {/* Elevation Profile */}
+        {/* Performance Dashboard — the new dense info grid */}
+        <RideDashboard ride={ride} />
+
+        {/* Full-width telemetry charts */}
+        <h3 className="text-xs font-semibold tracking-widest uppercase text-brand mb-3 mt-2">
+          Telemetry
+        </h3>
         <ElevationProfile
           points={ride.elevationProfile}
           maxElevation={ride.elevation}
           totalDistance={ride.distance}
         />
-
-        {/* Heart Rate Profile */}
         <MetricChart
           title="Heart Rate"
           points={ride.heartrateProfile}
@@ -112,8 +126,6 @@ export default function FeaturedRide({ ride }: Props) {
             ride.avgHeartrate ? `${Math.round(ride.avgHeartrate)} bpm` : undefined
           }
         />
-
-        {/* Power Profile */}
         <MetricChart
           title="Power"
           points={ride.powerProfile}
@@ -127,12 +139,9 @@ export default function FeaturedRide({ ride }: Props) {
           }
         />
 
-        {/* Max Stats */}
-        <MaxStatsRow stats={ride.maxStats} />
-
         {/* Photos */}
         {ride.photos.length > 0 && (
-          <div>
+          <div className="mt-2">
             <h3 className="text-xs font-semibold tracking-widest uppercase text-brand mb-3">
               Photos
             </h3>

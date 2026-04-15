@@ -29,6 +29,8 @@ export interface StravaActivity {
   average_watts?: number;
   average_cadence?: number;
   suffer_score?: number;
+  gear_id?: string;
+  start_latlng?: [number, number] | null; // [lat, lng]
   map: {
     id: string;
     summary_polyline: string;
@@ -95,6 +97,52 @@ export interface MaxStats {
   maxGrade: number; // %
 }
 
+export interface WeatherData {
+  tempF: number;
+  windMph: number;
+  windDir: string; // "N", "NE", etc.
+  conditions: string; // "Clear", "Rainy", etc.
+  humidity: number; // %
+}
+
+export interface ZoneBucket {
+  zone: number; // 1-5
+  pct: number; // 0-100
+  minutes: number;
+}
+
+export interface BestEffort {
+  name: string; // "1 mile", "5K", "10K", etc.
+  time: string; // "4:23"
+  isPR: boolean;
+}
+
+export interface RideAnalytics {
+  // HR insights
+  hrZones: ZoneBucket[]; // distribution across Z1-Z5
+  hrDrift: number; // % HR climbed from first to second half
+  // Power insights
+  powerVariability: number; // VI = NP/Avg, higher = more bursty
+  normalizedPower: number; // est. NP
+  // Effort & pacing
+  firstHalfAvgPower: number;
+  secondHalfAvgPower: number;
+  movingTimeSec: number;
+  elapsedTimeSec: number;
+  stoppedTimeSec: number;
+  // Strava native
+  sufferScore?: number;
+  // Best efforts (PRs, fastest segments by distance)
+  bestEfforts: BestEffort[];
+}
+
+export interface BikeStats {
+  name: string;
+  totalMiles: number;
+  rideCount?: number; // not always available
+  firstRideDate?: string; // ISO date
+}
+
 export interface StravaSegmentEffortRaw {
   id: number;
   name: string;
@@ -135,6 +183,8 @@ export interface FormattedFeaturedRide extends FormattedRide {
   heartrateProfile: StreamPoint[];
   powerProfile: StreamPoint[];
   maxStats: MaxStats;
+  analytics: RideAnalytics;
+  weather?: WeatherData;
   segments: FormattedSegment[];
 }
 
@@ -159,4 +209,5 @@ export interface StravaData {
   rides: FormattedRide[];
   stats: FormattedStats;
   monthlyStats: MonthlyStats;
+  bike: BikeStats | null;
 }

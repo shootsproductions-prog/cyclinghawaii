@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { put, list } from "@vercel/blob";
-import { FormattedFeaturedRide, FormattedRide } from "@/types/strava";
+import {
+  FormattedFeaturedRide,
+  FormattedRide,
+  RideAnalytics,
+  WeatherData,
+} from "@/types/strava";
 import { getAccessToken, getActivityPhotos } from "./strava";
 import { generateAndSaveAudio } from "./voice";
 
@@ -184,10 +189,91 @@ export async function generateBlogEntries(
   return [...existingEntries].sort((a, b) => b.rideId - a.rideId);
 }
 
+function buildAnalyticsBlock(
+  analytics?: RideAnalytics,
+  weather?: WeatherData
+): string {
+  if (!analytics && !weather) return "";
+
+  const lines: string[] = ["", "DEEPER ANALYTICS (use these to roast specifics):"];
+
+  if (analytics) {
+    if (analytics.sufferScore != null && analytics.sufferScore > 0) {
+      lines.push(`- Suffer Score: ${analytics.sufferScore}`);
+    }
+    if (analytics.normalizedPower > 0) {
+      lines.push(`- Normalized Power: ${analytics.normalizedPower}w`);
+    }
+    if (analytics.powerVariability > 0) {
+      lines.push(
+        `- Power Variability Index: ${analytics.powerVariability} (1.0 = smooth, 1.3+ = bursty/uneven)`
+      );
+    }
+    if (analytics.firstHalfAvgPower > 0 && analytics.secondHalfAvgPower > 0) {
+      const delta = Math.round(
+        ((analytics.secondHalfAvgPower - analytics.firstHalfAvgPower) /
+          analytics.firstHalfAvgPower) *
+          100
+      );
+      const pacing =
+        delta > 5 ? "negative split (finished STRONGER)" :
+        delta < -10 ? "positive split (FADED hard)" :
+        "even pacing";
+      lines.push(
+        `- Pacing: 1st half ${analytics.firstHalfAvgPower}w → 2nd half ${analytics.secondHalfAvgPower}w (${delta > 0 ? "+" : ""}${delta}%, ${pacing})`
+      );
+    }
+    if (analytics.hrDrift !== 0) {
+      lines.push(
+        `- HR Drift: ${analytics.hrDrift > 0 ? "+" : ""}${analytics.hrDrift}% (positive = fatigue accumulating)`
+      );
+    }
+    if (analytics.stoppedTimeSec > 0) {
+      const min = Math.floor(analytics.stoppedTimeSec / 60);
+      const sec = analytics.stoppedTimeSec % 60;
+      lines.push(
+        `- Stopped Time: ${min}:${String(sec).padStart(2, "0")} (loitering, breaks, photo ops)`
+      );
+    }
+    if (analytics.hrZones.length > 0) {
+      const zoneStr = analytics.hrZones
+        .filter((z) => z.pct > 0)
+        .map((z) => `Z${z.zone}=${z.pct}%`)
+        .join(", ");
+      lines.push(`- HR Zones: ${zoneStr}`);
+    }
+    if (analytics.bestEfforts.length > 0) {
+      const prs = analytics.bestEfforts.filter((e) => e.isPR);
+      if (prs.length > 0) {
+        lines.push(
+          `- PRs SET ON THIS RIDE: ${prs.map((e) => `${e.name} (${e.time})`).join(", ")}`
+        );
+      } else {
+        const top = analytics.bestEfforts.slice(0, 3);
+        lines.push(
+          `- Best efforts: ${top.map((e) => `${e.name} ${e.time}`).join(", ")}`
+        );
+      }
+    }
+  }
+
+  if (weather) {
+    lines.push(
+      `- Weather: ${weather.tempF}°F, ${weather.conditions}, ${weather.windMph} mph wind from ${weather.windDir}, ${weather.humidity}% humidity`
+    );
+  }
+
+  return lines.join("\n");
+}
+
 async function generateEntry(
   ride: FormattedRide | FormattedFeaturedRide,
   photoUrl?: string
 ): Promise<BlogEntry> {
+  // FormattedFeaturedRide carries analytics + weather; regular rides don't
+  const featured = ride as FormattedFeaturedRide;
+  const analyticsBlock = buildAnalyticsBlock(featured.analytics, featured.weather);
+
   const prompt = `You are Laura, Vini's AI assistant and coach, writing a journal entry about his latest ride on cyclinghawaii.com.
 
 LAURA'S VOICE:
@@ -196,6 +282,7 @@ LAURA'S VOICE:
 - She roasts with love. Only rarely genuinely impressed — reserved for outstanding rides.
 - She knows he used to ride 500 miles/month and wants him back there.
 - Hawaiian references OK but sparingly.
+- AVOID generic averages — pick specific data points to roast (pacing, drift, zones, weather, PRs).
 
 Write a 3-4 paragraph entry (~150 words max) about this specific ride. Reference the actual numbers but make them funny. End with something memorable.
 
@@ -211,14 +298,16 @@ Ride data:
 ${ride.avgHeartrate ? `- Avg Heart Rate: ${Math.round(ride.avgHeartrate)} bpm` : ""}
 ${ride.avgWatts ? `- Avg Power: ${Math.round(ride.avgWatts)} watts` : ""}
 ${ride.avgCadence ? `- Cadence: ${Math.round(ride.avgCadence)} rpm` : ""}
-${ride.calories ? `- Calories: ${ride.calories}` : ""}
+${ride.calories ? `- Calories: ${ride.calories}` : ""}${analyticsBlock}
 
 Rules:
 - No emojis, no hashtags
 - Under 150 words
 - Don't start with the ride name
 - Don't start with "Laura here" — she's writing, not introducing
-- Be specific with numbers. Laura reads the data.`;
+- Be specific with numbers. Laura reads the data.
+- If PRs were set, acknowledge briefly — Laura is sparingly impressed.
+- If pacing was poor (positive split), use it. If HR drift is high, use it. Specifics > generalities.`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",

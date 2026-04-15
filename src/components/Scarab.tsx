@@ -1,7 +1,12 @@
 import Image from "next/image";
 import fs from "fs";
 import path from "path";
+import { BikeStats } from "@/types/strava";
 import SectionHeader from "./SectionHeader";
+
+interface Props {
+  bike?: BikeStats | null;
+}
 
 const specs = [
   { label: "Frame", value: "Trek Checkpoint SL 7 Gen 3" },
@@ -26,7 +31,7 @@ function getBikePhoto(name: string): string {
   return `/bike/${name}.svg`;
 }
 
-export default function Scarab() {
+export default function Scarab({ bike }: Props) {
   const heroPhoto = getBikePhoto("scarab-hero");
   const grid = Array.from({ length: 9 }, (_, i) =>
     getBikePhoto(`scarab-grid-${i + 1}`)
@@ -78,6 +83,45 @@ export default function Scarab() {
             </p>
           </div>
         </div>
+
+        {/* Lifetime stats — Scarab's odometer */}
+        {bike && bike.totalMiles > 0 && (
+          <div className="bg-card border border-border rounded-2xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-semibold tracking-widest uppercase text-brand">
+                Lifetime Odometer
+              </h3>
+              <span className="text-xs text-mist italic">
+                Every mile she&apos;s ever rolled
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-strava">
+                  {bike.totalMiles.toLocaleString()}
+                </div>
+                <div className="text-xs text-mist uppercase tracking-wider mt-1">
+                  Total Miles
+                </div>
+              </div>
+              <div>
+                <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
+                  {Math.round(bike.totalMiles * 1.60934).toLocaleString()}
+                </div>
+                <div className="text-xs text-mist uppercase tracking-wider mt-1">
+                  Total km
+                </div>
+              </div>
+              <div className="col-span-2 md:col-span-1">
+                <div className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold text-mist italic">
+                  {bike.totalMiles > 1000
+                    ? `That's roughly ${Math.round(bike.totalMiles / 134)} times across Maui`
+                    : "Just getting started"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 3x3 photo grid */}
         <div className="grid grid-cols-3 gap-2 md:gap-3">
