@@ -6,8 +6,19 @@ import {
   RideAnalytics,
   WeatherData,
 } from "@/types/strava";
-import { getAccessToken, getActivityPhotos } from "./strava";
+import {
+  getAccessToken,
+  getActivityPhotos,
+  updateActivityDescription,
+} from "./strava";
 import { generateAndSaveAudio } from "./voice";
+
+const LAURA_SIGNATURE =
+  "— Laura Ryder · Vini's Assistant, Chief Reality Officer, and Professional BS Detector · cyclinghawaii.com";
+
+function buildStravaDescription(body: string): string {
+  return `${body.trim()}\n\n${LAURA_SIGNATURE}`;
+}
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -151,6 +162,26 @@ export async function generateBlogEntries(
         entry.audioUrl = await maybeGenerateAudio(ride.id, entry.body);
       } catch (error) {
         console.error(`Audio generation failed for ride ${ride.id}:`, error);
+      }
+
+      // Push Laura's roast to Strava as the activity description.
+      // Only for NEW entries — we don't overwrite historical rides.
+      if (stravaToken && entry.body) {
+        try {
+          const description = buildStravaDescription(entry.body);
+          const ok = await updateActivityDescription(
+            stravaToken,
+            ride.id,
+            description
+          );
+          if (ok) {
+            console.log(
+              `Pushed Laura's roast to Strava for ride ${ride.id}`
+            );
+          }
+        } catch (error) {
+          console.error(`Strava description push failed for ride ${ride.id}:`, error);
+        }
       }
 
       existingEntries.push(entry);

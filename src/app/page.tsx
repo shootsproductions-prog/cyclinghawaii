@@ -25,9 +25,12 @@ export default async function Home() {
   ]);
   const badges = await checkAndAwardBadge(challenge);
 
+  // Find the blog entry for the currently featured ride (for Laura's Take)
+  const featuredEntry = blogEntries.find((e) => e.rideId === featured.id);
+
   return (
     <main>
-      <FeaturedRide ride={featured} />
+      <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
       <Divider />

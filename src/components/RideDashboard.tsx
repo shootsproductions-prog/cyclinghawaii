@@ -1,7 +1,18 @@
 import { FormattedFeaturedRide } from "@/types/strava";
+import { BlogEntry } from "@/lib/blog";
 
 interface Props {
   ride: FormattedFeaturedRide;
+  featuredEntry?: BlogEntry;
+}
+
+function getFirstSentence(text: string): string {
+  const trimmed = text.trim();
+  // Grab the first paragraph
+  const firstPara = trimmed.split(/\n\n+/)[0];
+  // Then the first sentence, fall back to the paragraph itself
+  const match = firstPara.match(/^.*?[.!?](?:\s|$)/);
+  return (match ? match[0] : firstPara).trim();
 }
 
 const formatHMS = (sec: number) => {
@@ -12,9 +23,10 @@ const formatHMS = (sec: number) => {
   return `${m}:${String(s).padStart(2, "0")}`;
 };
 
-export default function RideDashboard({ ride }: Props) {
+export default function RideDashboard({ ride, featuredEntry }: Props) {
   const a = ride.analytics;
   const w = ride.weather;
+  const lauraTake = featuredEntry ? getFirstSentence(featuredEntry.body) : null;
   const sufferLabel = (() => {
     const s = a.sufferScore ?? 0;
     if (s === 0) return "—";
@@ -202,6 +214,34 @@ export default function RideDashboard({ ride }: Props) {
             </div>
             <Sub label="Wind" value={`${w.windMph} mph ${w.windDir}`} />
             <Sub label="Humidity" value={`${w.humidity}%`} />
+          </Card>
+        )}
+
+        {/* LAURA'S TAKE CARD — pull-quote roast preview */}
+        {lauraTake && (
+          <Card title="Laura's Take" accent="#b45309">
+            <div className="relative">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="#b45309"
+                className="opacity-20 absolute -top-1 -left-1"
+                aria-hidden
+              >
+                <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+                <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" />
+              </svg>
+              <p className="italic text-text text-base leading-relaxed pl-7 pr-1">
+                {lauraTake}
+              </p>
+              <a
+                href="#log"
+                className="inline-block mt-3 text-xs font-semibold text-strava uppercase tracking-wider hover:underline"
+              >
+                Read the full entry &darr;
+              </a>
+            </div>
           </Card>
         )}
 

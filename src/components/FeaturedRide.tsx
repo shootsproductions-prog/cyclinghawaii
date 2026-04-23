@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { FormattedFeaturedRide } from "@/types/strava";
+import { BlogEntry } from "@/lib/blog";
 import SectionHeader from "./SectionHeader";
 import ElevationProfile from "./ElevationProfile";
 import MetricChart from "./MetricChart";
@@ -7,9 +8,10 @@ import RideDashboard from "./RideDashboard";
 
 interface Props {
   ride: FormattedFeaturedRide;
+  featuredEntry?: BlogEntry;
 }
 
-export default function FeaturedRide({ ride }: Props) {
+export default function FeaturedRide({ ride, featuredEntry }: Props) {
   const w = ride.weather;
   return (
     <section id="rides" className="pt-28 pb-12 px-6">
@@ -103,7 +105,7 @@ export default function FeaturedRide({ ride }: Props) {
         </a>
 
         {/* Performance Dashboard — the new dense info grid */}
-        <RideDashboard ride={ride} />
+        <RideDashboard ride={ride} featuredEntry={featuredEntry} />
 
         {/* Full-width telemetry charts */}
         <h3 className="text-xs font-semibold tracking-widest uppercase text-brand mb-3 mt-2">

@@ -381,6 +381,39 @@ interface StravaGearResponse {
   model_name?: string;
 }
 
+/**
+ * Update an activity's description on Strava (Laura's public roast).
+ * Requires the `activity:write` scope on the refresh token.
+ */
+export async function updateActivityDescription(
+  token: string,
+  activityId: number,
+  description: string
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${STRAVA_API_BASE}/activities/${activityId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ description }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(
+        `Strava description update failed (${res.status}):`,
+        err.slice(0, 200)
+      );
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Strava description update error:", error);
+    return false;
+  }
+}
+
 export async function getBikeStats(
   token: string,
   gearId: string
