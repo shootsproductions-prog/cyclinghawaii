@@ -38,6 +38,8 @@ export interface StravaActivity {
 }
 
 export interface StravaAthleteStats {
+  biggest_ride_distance?: number; // meters
+  biggest_climb_elevation_gain?: number; // meters
   recent_ride_totals: StravaTotals;
   all_ride_totals: StravaTotals;
   ytd_ride_totals: StravaTotals;
@@ -143,6 +145,43 @@ export interface BikeStats {
   firstRideDate?: string; // ISO date
 }
 
+/**
+ * Aggregate stats for the dedicated Stats section. All numbers are
+ * raw values — the component formats them at render time.
+ */
+export interface StatsSummary {
+  // Year goal
+  ytdMiles: number;
+  yearGoal: number;
+  paceMiles: number; // projected end-of-year miles based on current pace
+
+  // This month (snapshot — already in monthlyStats but we duplicate the key fields)
+  monthMiles: number;
+  monthRides: number;
+  monthElevationFt: number;
+  monthHours: number;
+
+  // Last 4 weeks (rolling)
+  recentMiles: number;
+  recentRides: number;
+  recentElevationFt: number;
+
+  // Year to date (totals)
+  ytdRides: number;
+  ytdElevationFt: number;
+  ytdAvgSpeed: number;
+
+  // All time
+  lifetimeMiles: number;
+  lifetimeRides: number;
+  lifetimeElevationFt: number;
+
+  // Records
+  biggestRideMiles: number;
+  biggestClimbFt: number;
+  longestStreakDays: number;
+}
+
 export interface StravaSegmentEffortRaw {
   id: number;
   name: string;
@@ -208,6 +247,7 @@ export interface StravaData {
   featured: FormattedFeaturedRide;
   rides: FormattedRide[];
   stats: FormattedStats;
+  statsSummary: StatsSummary;
   monthlyStats: MonthlyStats;
   bike: BikeStats | null;
   /** Raw Strava activities — exposed for bonus badge detection. */

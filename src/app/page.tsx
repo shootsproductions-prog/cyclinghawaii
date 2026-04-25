@@ -6,6 +6,7 @@ import { awardBonusBadges } from "@/lib/bonus-badges";
 import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
 import StravaFeed from "@/components/StravaFeed";
+import Stats from "@/components/Stats";
 import Challenge from "@/components/Challenge";
 import LiveTracker from "@/components/LiveTracker";
 import InstagramGrid from "@/components/InstagramGrid";
@@ -19,7 +20,7 @@ import Divider from "@/components/Divider";
 export const revalidate = 900;
 
 export default async function Home() {
-  const { featured, rides, stats, monthlyStats, bike, rawActivities } =
+  const { featured, rides, stats, statsSummary, monthlyStats, bike, rawActivities } =
     await getStravaData();
   const [blogEntries, challenge] = await Promise.all([
     generateBlogEntries(featured, rides),
@@ -41,6 +42,8 @@ export default async function Home() {
       <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
       <Divider />
       <StravaFeed rides={rides} stats={stats} />
+      <Divider />
+      <Stats stats={statsSummary} />
       <Divider />
       <LiveTracker />
       <Divider />

@@ -7,6 +7,7 @@ import {
   StravaAthleteStats,
   StravaPhoto,
   StravaSegmentEffortRaw,
+  StatsSummary,
   FormattedRide,
   FormattedFeaturedRide,
   FormattedSegment,
@@ -607,6 +608,95 @@ function formatStats(stats: StravaAthleteStats): FormattedStats {
   };
 }
 
+// Default annual goal — same as the "6K Year" bonus badge.
+// Easy to change later or have Laura set it.
+const DEFAULT_YEAR_GOAL_MILES = 6000;
+
+function dayOfYear(d: Date): number {
+  const start = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((d.getTime() - start.getTime()) / 86400000);
+}
+
+function longestRideStreak(activities: StravaActivity[]): number {
+  const days = new Set(
+    activities
+      .filter((a) => a.type === "Ride" || a.sport_type === "Ride")
+      .map((a) => a.start_date_local.slice(0, 10))
+  );
+  if (days.size === 0) return 0;
+
+  const sorted = Array.from(days).sort();
+  let longest = 1;
+  let current = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1] + "T00:00:00Z");
+    const curr = new Date(sorted[i] + "T00:00:00Z");
+    const dayDiff = Math.round(
+      (curr.getTime() - prev.getTime()) / 86400000
+    );
+    if (dayDiff === 1) {
+      current++;
+      longest = Math.max(longest, current);
+    } else {
+      current = 1;
+    }
+  }
+  return longest;
+}
+
+function buildStatsSummary(
+  athleteStats: StravaAthleteStats,
+  monthlyStats: MonthlyStats,
+  activities: StravaActivity[]
+): StatsSummary {
+  const ytd = athleteStats.ytd_ride_totals;
+  const recent = athleteStats.recent_ride_totals;
+  const all = athleteStats.all_ride_totals;
+
+  const ytdMiles = metersToMiles(ytd.distance);
+  const today = new Date();
+  const doy = Math.max(dayOfYear(today), 1);
+  const isLeap =
+    (today.getFullYear() % 4 === 0 && today.getFullYear() % 100 !== 0) ||
+    today.getFullYear() % 400 === 0;
+  const daysInYear = isLeap ? 366 : 365;
+  const paceMiles = Math.round((ytdMiles / doy) * daysInYear);
+
+  return {
+    ytdMiles: Math.round(ytdMiles),
+    yearGoal: DEFAULT_YEAR_GOAL_MILES,
+    paceMiles,
+
+    monthMiles: monthlyStats.miles,
+    monthRides: monthlyStats.rides,
+    monthElevationFt: monthlyStats.elevationFt,
+    monthHours: monthlyStats.movingTimeHours,
+
+    recentMiles: Math.round(metersToMiles(recent.distance)),
+    recentRides: recent.count,
+    recentElevationFt: Math.round(metersToFeet(recent.elevation_gain)),
+
+    ytdRides: ytd.count,
+    ytdElevationFt: Math.round(metersToFeet(ytd.elevation_gain)),
+    ytdAvgSpeed:
+      ytd.moving_time > 0
+        ? Math.round((ytdMiles / (ytd.moving_time / 3600)) * 10) / 10
+        : 0,
+
+    lifetimeMiles: Math.round(metersToMiles(all.distance)),
+    lifetimeRides: all.count,
+    lifetimeElevationFt: Math.round(metersToFeet(all.elevation_gain)),
+
+    biggestRideMiles: athleteStats.biggest_ride_distance
+      ? Math.round(metersToMiles(athleteStats.biggest_ride_distance) * 10) / 10
+      : 0,
+    biggestClimbFt: athleteStats.biggest_climb_elevation_gain
+      ? Math.round(metersToFeet(athleteStats.biggest_climb_elevation_gain))
+      : 0,
+    longestStreakDays: longestRideStreak(activities),
+  };
+}
+
 function calculateMonthlyStats(activities: StravaActivity[]): MonthlyStats {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -752,10 +842,17 @@ export async function getStravaData(): Promise<StravaData> {
       bike = await getBikeStats(token, gearId);
     }
 
+    const statsSummary = buildStatsSummary(
+      athleteStats,
+      monthlyStats,
+      activities
+    );
+
     const result: StravaData = {
       featured,
       rides: allRides.slice(1),
       stats,
+      statsSummary,
       monthlyStats,
       bike,
       rawActivities: activities,
@@ -866,6 +963,27 @@ function getFallbackData(): StravaData {
       movingTimeHours: 6.5,
       calories: 2800,
       avgSpeedMph: 12.5,
+    },
+    statsSummary: {
+      ytdMiles: 0,
+      yearGoal: DEFAULT_YEAR_GOAL_MILES,
+      paceMiles: 0,
+      monthMiles: 45,
+      monthRides: 4,
+      monthElevationFt: 3200,
+      monthHours: 6.5,
+      recentMiles: 0,
+      recentRides: 0,
+      recentElevationFt: 0,
+      ytdRides: 0,
+      ytdElevationFt: 0,
+      ytdAvgSpeed: 0,
+      lifetimeMiles: 0,
+      lifetimeRides: 0,
+      lifetimeElevationFt: 0,
+      biggestRideMiles: 0,
+      biggestClimbFt: 0,
+      longestStreakDays: 0,
     },
     bike: null,
     rawActivities: [],
