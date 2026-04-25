@@ -5,7 +5,6 @@ import { finalizeMonthlyBadge, loadBadges } from "@/lib/badges";
 import { awardBonusBadges } from "@/lib/bonus-badges";
 import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
-import StravaFeed from "@/components/StravaFeed";
 import Stats from "@/components/Stats";
 import Challenge from "@/components/Challenge";
 import LiveTracker from "@/components/LiveTracker";
@@ -22,6 +21,7 @@ export const revalidate = 900;
 export default async function Home() {
   const { featured, rides, stats, statsSummary, monthlyStats, bike, rawActivities } =
     await getStravaData();
+  // generateBlogEntries still scans the recent rides for new content
   const [blogEntries, challenge] = await Promise.all([
     generateBlogEntries(featured, rides),
     getChallenge(monthlyStats),
@@ -41,15 +41,13 @@ export default async function Home() {
     <main>
       <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
       <Divider />
-      <StravaFeed rides={rides} stats={stats} />
+      <LiveTracker />
+      <Divider />
+      <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
       <Stats stats={statsSummary} />
       <Divider />
-      <LiveTracker />
-      <Divider />
       <Challenge challenge={challenge} badges={badges} bonusBadges={bonusBadges} />
-      <Divider />
-      <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
       <Scarab bike={bike} />
       <Divider />
