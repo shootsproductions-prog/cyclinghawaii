@@ -758,6 +758,7 @@ export async function getStravaData(): Promise<StravaData> {
       stats,
       monthlyStats,
       bike,
+      rawActivities: activities,
     };
 
     // Cache the successful snapshot so we have something real to serve
@@ -867,5 +868,6 @@ function getFallbackData(): StravaData {
       avgSpeedMph: 12.5,
     },
     bike: null,
+    rawActivities: [],
   };
 }

@@ -210,4 +210,6 @@ export interface StravaData {
   stats: FormattedStats;
   monthlyStats: MonthlyStats;
   bike: BikeStats | null;
+  /** Raw Strava activities — exposed for bonus badge detection. */
+  rawActivities: StravaActivity[];
 }

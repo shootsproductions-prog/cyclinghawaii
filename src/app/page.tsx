@@ -2,6 +2,7 @@ import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getChallenge } from "@/lib/challenge";
 import { finalizeMonthlyBadge, loadBadges } from "@/lib/badges";
+import { awardBonusBadges } from "@/lib/bonus-badges";
 import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
 import StravaFeed from "@/components/StravaFeed";
@@ -18,7 +19,8 @@ import Divider from "@/components/Divider";
 export const revalidate = 900;
 
 export default async function Home() {
-  const { featured, rides, stats, monthlyStats, bike } = await getStravaData();
+  const { featured, rides, stats, monthlyStats, bike, rawActivities } =
+    await getStravaData();
   const [blogEntries, challenge] = await Promise.all([
     generateBlogEntries(featured, rides),
     getChallenge(monthlyStats),
@@ -26,7 +28,10 @@ export default async function Home() {
   // Award the badge if the current challenge has been completed.
   // (Past months are auto-finalized inside getChallenge when transitioning.)
   await finalizeMonthlyBadge(challenge);
-  const badges = await loadBadges();
+  const [badges, bonusBadges] = await Promise.all([
+    loadBadges(),
+    awardBonusBadges(rawActivities, stats),
+  ]);
 
   // Find the blog entry for the currently featured ride (for Laura's Take)
   const featuredEntry = blogEntries.find((e) => e.rideId === featured.id);
@@ -39,7 +44,7 @@ export default async function Home() {
       <Divider />
       <LiveTracker />
       <Divider />
-      <Challenge challenge={challenge} badges={badges} />
+      <Challenge challenge={challenge} badges={badges} bonusBadges={bonusBadges} />
       <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />

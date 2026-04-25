@@ -1,13 +1,15 @@
 import { Challenge as ChallengeType } from "@/lib/challenge";
 import { Badge } from "@/lib/badges";
+import { BonusBadge } from "@/lib/bonus-badges";
 import BadgeWall from "./BadgeWall";
 
 interface Props {
   challenge: ChallengeType;
   badges: Badge[];
+  bonusBadges?: BonusBadge[];
 }
 
-export default function Challenge({ challenge, badges }: Props) {
+export default function Challenge({ challenge, badges, bonusBadges }: Props) {
   const isComplete = challenge.progressPct >= 100;
 
   return (
@@ -88,7 +90,7 @@ export default function Challenge({ challenge, badges }: Props) {
         </p>
 
         {/* Badge wall */}
-        <BadgeWall badges={badges} />
+        <BadgeWall badges={badges} bonusBadges={bonusBadges} />
       </div>
     </section>
   );
