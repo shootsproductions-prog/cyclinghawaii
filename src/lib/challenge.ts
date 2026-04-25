@@ -83,7 +83,24 @@ export async function getChallenge(
       // Keep existing note
     }
 
-    return { ...existing, current, progressPct, coachNote };
+    const updated = { ...existing, current, progressPct, coachNote };
+
+    // Persist the live progress so the eventual month-end finalization
+    // (which reads from blob) has accurate `current` data.
+    saveChallenge(updated).catch(() => {});
+
+    return updated;
+  }
+
+  // Different month — finalize the old challenge as a badge first
+  // (so we capture last month's win or miss in the Trophy Case).
+  if (existing) {
+    try {
+      const { finalizeMonthlyBadge } = await import("./badges");
+      await finalizeMonthlyBadge(existing);
+    } catch (error) {
+      console.error("Failed to finalize previous month's badge:", error);
+    }
   }
 
   // Generate new challenge for this month

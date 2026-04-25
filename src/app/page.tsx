@@ -1,7 +1,7 @@
 import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getChallenge } from "@/lib/challenge";
-import { checkAndAwardBadge } from "@/lib/badges";
+import { finalizeMonthlyBadge, loadBadges } from "@/lib/badges";
 import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
 import StravaFeed from "@/components/StravaFeed";
@@ -23,7 +23,10 @@ export default async function Home() {
     generateBlogEntries(featured, rides),
     getChallenge(monthlyStats),
   ]);
-  const badges = await checkAndAwardBadge(challenge);
+  // Award the badge if the current challenge has been completed.
+  // (Past months are auto-finalized inside getChallenge when transitioning.)
+  await finalizeMonthlyBadge(challenge);
+  const badges = await loadBadges();
 
   // Find the blog entry for the currently featured ride (for Laura's Take)
   const featuredEntry = blogEntries.find((e) => e.rideId === featured.id);
