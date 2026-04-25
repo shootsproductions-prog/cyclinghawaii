@@ -3,6 +3,7 @@ import { generateBlogEntries } from "@/lib/blog";
 import { getChallenge } from "@/lib/challenge";
 import { finalizeMonthlyBadge, loadBadges } from "@/lib/badges";
 import { awardBonusBadges } from "@/lib/bonus-badges";
+import Welcome from "@/components/Welcome";
 import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
 import Stats from "@/components/Stats";
@@ -39,6 +40,7 @@ export default async function Home() {
 
   return (
     <main>
+      <Welcome />
       <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
       <Divider />
       <LiveTracker />
