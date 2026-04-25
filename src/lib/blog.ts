@@ -17,7 +17,13 @@ const LAURA_SIGNATURE =
   "— Laura Ryder · Vini's Assistant, Chief Reality Officer, and Professional BS Detector · cyclinghawaii.com";
 
 function buildStravaDescription(body: string): string {
-  return `${body.trim()}\n\n${LAURA_SIGNATURE}`;
+  let cleaned = body.trim();
+
+  // Strip date patterns from the beginning (e.g., "April 24, 2026", "Apr 24", "May 1")
+  // Matches: Month (full or short), Day, optional comma, optional year
+  cleaned = cleaned.replace(/^[A-Za-z]+\s+\d{1,2},?\s*\d{0,4}\n*/gm, '').trim();
+
+  return `${cleaned}\n\n${LAURA_SIGNATURE}`;
 }
 
 const client = new Anthropic({
