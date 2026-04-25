@@ -9,6 +9,20 @@ function format(n: number): string {
   return n.toLocaleString();
 }
 
+function bookkeeperNote(stats: StatsSummary, verdict: string): string {
+  const pct = stats.yearGoal > 0 ? (stats.ytdMiles / stats.yearGoal) * 100 : 0;
+  if (pct >= 100) {
+    return `Books are settled. ${format(stats.ytdMiles)} miles logged against a ${format(stats.yearGoal)} goal. The ledger says he delivered. I'll allow it.`;
+  }
+  if (stats.paceMiles >= stats.yearGoal && stats.paceMiles > 0) {
+    return `On pace. The math checks out — for now. Numbers don't care about excuses, so neither do I.`;
+  }
+  if (stats.monthMiles === 0 && stats.recentMiles < 50) {
+    return `Quiet month in the ledger. The bike doesn't ride itself, and I don't fudge the totals.`;
+  }
+  return `${verdict || "Keep moving."} I log what happens — not what was promised. ${format(stats.ytdMiles)} of ${format(stats.yearGoal)} miles. The rest is on him.`;
+}
+
 function paceVerdict(ytd: number, goal: number, pace: number): string {
   if (goal <= 0) return "";
   const pct = (ytd / goal) * 100;
@@ -28,9 +42,9 @@ export default function Stats({ stats }: Props) {
   return (
     <section id="stats" className="py-20 px-6 bg-surface">
       <SectionHeader
-        label="By the Numbers"
-        title="Year of Vini"
-        description="Every mile, every foot, every record. The data doesn't lie. He's still got work to do."
+        label="Laura's Ledger"
+        title="The Truth in Numbers"
+        description="I keep the books. Every mile, every foot, every record — logged, counted, and held against him. Numbers don't flatter. They just tell."
       />
 
       <div className="max-w-[1000px] mx-auto">
@@ -186,6 +200,30 @@ export default function Stats({ stats }: Props) {
             color="#ef4444"
             iconPath="M12 2c1.5 4 6 5 6 11a6 6 0 11-12 0c0-3 2-4 2-7 1.5 1 3 1 4-4z"
           />
+        </div>
+
+        {/* Laura's signature */}
+        <div className="mt-8 flex items-start gap-3 max-w-[700px] mx-auto">
+          <div className="w-8 h-8 rounded-full bg-strava/10 flex items-center justify-center shrink-0 mt-0.5">
+            <svg
+              width="16"
+              height="16"
+              fill="none"
+              stroke="#fc5200"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-strava uppercase tracking-wider">
+              Bookkeeper&apos;s Note
+            </span>
+            <p className="text-mist text-sm mt-1 italic">
+              {bookkeeperNote(stats, verdict)}
+            </p>
+          </div>
         </div>
       </div>
     </section>
