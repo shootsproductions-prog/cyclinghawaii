@@ -8,7 +8,6 @@ import FeaturedRide from "@/components/FeaturedRide";
 import Scarab from "@/components/Scarab";
 import Stats from "@/components/Stats";
 import Challenge from "@/components/Challenge";
-import LiveTracker from "@/components/LiveTracker";
 import InstagramGrid from "@/components/InstagramGrid";
 import LogFiles from "@/components/LogFiles";
 import YouTubePlaylist from "@/components/YouTubePlaylist";
@@ -42,8 +41,6 @@ export default async function Home() {
     <main>
       <Welcome />
       <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
-      <Divider />
-      <LiveTracker />
       <Divider />
       <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
       <Divider />
