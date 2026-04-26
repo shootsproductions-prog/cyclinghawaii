@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 
-const links = [
-  { hash: "rides", label: "Rides" },
-  { hash: "tracker", label: "Live Tracker" },
+// `href` is an absolute path. `hash` jumps to a homepage section.
+const links: { hash?: string; href?: string; label: string }[] = [
+  { href: "/live", label: "Live Tracker" },
   { hash: "log", label: "Log Files" },
   { hash: "scarab", label: "Scarab" },
   { hash: "instagram", label: "Instagram" },
@@ -27,10 +27,13 @@ export default function Nav() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // When on the home page, use #hash for smooth-scroll.
-  // When on any other page (e.g. /log), use /#hash so the browser navigates
-  // back to home and jumps to the section.
-  const hrefFor = (hash: string) => (isHome ? `#${hash}` : `/#${hash}`);
+  // Absolute paths win. Otherwise:
+  //   - On home, use #hash for smooth-scroll
+  //   - On any other page (e.g. /log), use /#hash to navigate back + scroll
+  const hrefFor = (link: { hash?: string; href?: string }) => {
+    if (link.href) return link.href;
+    return isHome ? `#${link.hash}` : `/#${link.hash}`;
+  };
 
   return (
     <nav
@@ -62,9 +65,9 @@ export default function Nav() {
         }`}
       >
         {links.map((link) => (
-          <li key={link.hash}>
+          <li key={link.href ?? link.hash}>
             <a
-              href={hrefFor(link.hash)}
+              href={hrefFor(link)}
               onClick={() => setMenuOpen(false)}
               className="text-mist text-sm font-medium uppercase tracking-widest no-underline transition-colors hover:text-text"
             >
