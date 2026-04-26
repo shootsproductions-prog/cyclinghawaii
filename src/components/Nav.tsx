@@ -8,6 +8,7 @@ import Image from "next/image";
 const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "rides", label: "Rides" },
   { href: "/live", label: "Live Tracker" },
+  { href: "/club", label: "Club" },
   { hash: "log", label: "Log Files" },
   { hash: "scarab", label: "Scarab" },
   { hash: "instagram", label: "Instagram" },
