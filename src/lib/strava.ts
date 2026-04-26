@@ -608,9 +608,9 @@ function formatStats(stats: StravaAthleteStats): FormattedStats {
   };
 }
 
-// Default annual goal — same as the "6K Year" bonus badge.
-// Easy to change later or have Laura set it.
-const DEFAULT_YEAR_GOAL_MILES = 6000;
+// Default annual goal. The "6K Year" bonus badge sits above this as
+// a stretch achievement.
+const DEFAULT_YEAR_GOAL_MILES = 5000;
 
 function dayOfYear(d: Date): number {
   const start = new Date(d.getFullYear(), 0, 1);
@@ -661,11 +661,15 @@ function buildStatsSummary(
     today.getFullYear() % 400 === 0;
   const daysInYear = isLeap ? 366 : 365;
   const paceMiles = Math.round((ytdMiles / doy) * daysInYear);
+  const targetTodayMiles = Math.round(
+    (DEFAULT_YEAR_GOAL_MILES / daysInYear) * doy
+  );
 
   return {
     ytdMiles: Math.round(ytdMiles),
     yearGoal: DEFAULT_YEAR_GOAL_MILES,
     paceMiles,
+    targetTodayMiles,
 
     monthMiles: monthlyStats.miles,
     monthRides: monthlyStats.rides,
@@ -968,6 +972,7 @@ function getFallbackData(): StravaData {
       ytdMiles: 0,
       yearGoal: DEFAULT_YEAR_GOAL_MILES,
       paceMiles: 0,
+      targetTodayMiles: 0,
       monthMiles: 45,
       monthRides: 4,
       monthElevationFt: 3200,

@@ -154,6 +154,7 @@ export interface StatsSummary {
   ytdMiles: number;
   yearGoal: number;
   paceMiles: number; // projected end-of-year miles based on current pace
+  targetTodayMiles: number; // where you should be today on linear pace to hit the goal
 
   // This month (snapshot — already in monthlyStats but we duplicate the key fields)
   monthMiles: number;

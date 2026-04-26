@@ -23,13 +23,17 @@ function bookkeeperNote(stats: StatsSummary, verdict: string): string {
   return `${verdict || "Keep moving."} I log what happens — not what was promised. ${format(stats.ytdMiles)} of ${format(stats.yearGoal)} miles. The rest is on him.`;
 }
 
-function paceVerdict(ytd: number, goal: number, pace: number): string {
+function paceVerdict(ytd: number, goal: number, target: number): string {
   if (goal <= 0) return "";
-  const pct = (ytd / goal) * 100;
-  if (pct >= 100) return "Goal already crushed.";
-  if (pace >= goal) return "On pace to hit it.";
-  const shortBy = goal - pace;
-  return `Off pace by ${format(Math.round(shortBy))} miles.`;
+  if (ytd >= goal) return "Goal already crushed.";
+  if (ytd >= target) {
+    const ahead = ytd - target;
+    return ahead > 0
+      ? `Ahead of pace by ${format(Math.round(ahead))} mi.`
+      : "On pace.";
+  }
+  const behind = target - ytd;
+  return `${format(Math.round(behind))} mi behind today's pace.`;
 }
 
 export default function Stats({ stats }: Props) {
@@ -37,7 +41,12 @@ export default function Stats({ stats }: Props) {
     Math.round((stats.ytdMiles / Math.max(stats.yearGoal, 1)) * 100),
     100
   );
-  const verdict = paceVerdict(stats.ytdMiles, stats.yearGoal, stats.paceMiles);
+  const verdict = paceVerdict(
+    stats.ytdMiles,
+    stats.yearGoal,
+    stats.targetTodayMiles
+  );
+  const onTrack = stats.ytdMiles >= stats.targetTodayMiles;
 
   return (
     <section id="stats" className="py-20 px-6 bg-surface">
@@ -80,20 +89,20 @@ export default function Stats({ stats }: Props) {
             />
           </div>
 
-          {stats.paceMiles > 0 && (
+          {stats.targetTodayMiles > 0 && (
             <div className="flex items-center justify-between text-sm flex-wrap gap-2">
               <span className="text-mist">
-                On current pace:{" "}
+                Today&apos;s target:{" "}
                 <span className="font-semibold text-text">
-                  {format(stats.paceMiles)} miles
-                </span>{" "}
-                by Dec 31
+                  {format(stats.targetTodayMiles)} mi
+                </span>
+                <span className="text-mist/70">
+                  {" "}· projects to {format(stats.paceMiles)} by Dec 31
+                </span>
               </span>
               <span
                 className={`text-xs italic ${
-                  stats.paceMiles >= stats.yearGoal
-                    ? "text-text"
-                    : "text-mist"
+                  onTrack ? "text-text" : "text-mist"
                 }`}
               >
                 {verdict}
