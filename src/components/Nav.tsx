@@ -6,6 +6,7 @@ import Image from "next/image";
 
 // `href` is an absolute path. `hash` jumps to a homepage section.
 const links: { hash?: string; href?: string; label: string }[] = [
+  { hash: "rides", label: "Rides" },
   { href: "/live", label: "Live Tracker" },
   { hash: "log", label: "Log Files" },
   { hash: "scarab", label: "Scarab" },
