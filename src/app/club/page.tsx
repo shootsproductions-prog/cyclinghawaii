@@ -618,21 +618,21 @@ function Manifesto() {
           Manifesto
         </div>
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text mb-12 text-center">
-          Why I started this
+          Aloha.
         </h2>
 
         <div className="space-y-6 text-text/85 text-lg leading-relaxed">
           <p>
-            I&apos;m Vini. I live on Maui. I ride alone — mostly. Not because I
-            don&apos;t like people, but because the version of cycling I love
-            doesn&apos;t fit a paceline.
+            I&apos;m Vini. I live on Maui. I ride bikes — same as a lot of
+            people. It keeps things simple, it&apos;s good for you, and on the
+            days I don&apos;t feel like going, that&apos;s usually when I need
+            to most.
           </p>
 
           <p>
-            I started Cycling Hawaii because the islands deserve a club that
-            rides like the islands feel. Slow when it wants to be slow. Quiet.
-            Patient with the wind. Rooted in ʻāina. A club where stopping for
-            malasadas isn&apos;t a confession.
+            I started Cycling Hawaii as a platform for riders — a place to
+            ride, celebrate each other, roast each other, and have fun. Show
+            up. Give what you&apos;ve got. That&apos;s the whole pitch.
           </p>
 
           <div className="grid md:grid-cols-2 gap-5 py-3">
@@ -642,8 +642,9 @@ function Manifesto() {
               </div>
               <p className="text-text text-base leading-relaxed">
                 Climbs that humble you. Gravel roads no one knows about. West
-                Maui Loops. Coffee at Grandma&apos;s. Sunset and rainbows. Bibs
-                that fit right.
+                Maui Loops. Coffee at Grandma&apos;s. Sunsets, secret
+                waterfalls, and rainbows. Bibs that fit right and good bar
+                tape.
               </p>
             </div>
             <div className="bg-card border border-border rounded-xl p-5">
@@ -651,8 +652,8 @@ function Manifesto() {
                 What I&apos;m not
               </div>
               <p className="text-text text-base leading-relaxed">
-                Drop rides. Hero efforts. Pretending cycling is more important
-                than it is. Pretending we are.
+                Drop rides. Hero efforts. Riding for the likes. Pretending
+                cycling is more important than it is.
               </p>
             </div>
           </div>
@@ -661,10 +662,9 @@ function Manifesto() {
             This isn&apos;t a training club. There&apos;s no team kit. No
             captain, no paceline, no 5:30am ride leader you have to text.{" "}
             <strong className="text-text">
-              Solo, but on the same island. Solo, but we know each other&apos;s
-              names.
-            </strong>{" "}
-            That&apos;s the breakaway.
+              Solo, but on the same island. We all end up at Loraine&apos;s
+              eventually.
+            </strong>
           </p>
 
           <div className="border-t border-border pt-8 mt-8">
@@ -688,20 +688,16 @@ function Manifesto() {
               <strong className="text-text">
                 we don&apos;t take this too seriously
               </strong>
-              . Life is short, Maui&apos;s hills are long, and somewhere in
-              between you have to leave room for a laugh. If you can&apos;t
-              take a soft jab from an AI bookkeeper with strong opinions, this
-              probably isn&apos;t your club.
+              . Life is short, and somewhere in between you have to leave room
+              for a laugh. If you can&apos;t take a soft jab from an AI
+              bookkeeper with strong opinions, this probably isn&apos;t your
+              club.
             </p>
           </div>
 
-          <p className="text-center pt-6 text-xl">
-            If you live on these islands and ride a bike,{" "}
-            <strong className="text-strava">e komo mai</strong>. The road is
-            yours. We&apos;ll be on a different one. That&apos;s the point.
+          <p className="text-center text-mist text-base pt-6 font-semibold">
+            — Vini
           </p>
-
-          <p className="text-center text-mist text-sm pt-2">— Vini</p>
         </div>
       </div>
     </section>
