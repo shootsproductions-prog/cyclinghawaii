@@ -617,6 +617,19 @@ function Manifesto() {
         <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3 text-center">
           Manifesto
         </div>
+
+        <div className="flex justify-center mb-6">
+          <div className="relative w-[88px] h-[88px] md:w-[104px] md:h-[104px] rounded-full overflow-hidden border-2 border-border shadow-sm">
+            <Image
+              src="/club/vini.jpg"
+              alt="Vini"
+              fill
+              sizes="104px"
+              className="object-cover"
+            />
+          </div>
+        </div>
+
         <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text mb-12 text-center">
           Aloha.
         </h2>
