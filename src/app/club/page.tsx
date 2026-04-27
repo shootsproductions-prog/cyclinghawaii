@@ -8,7 +8,8 @@ import {
 } from "@/lib/club";
 import { getMauiConditions, type MauiConditions } from "@/lib/conditions";
 import {
-  rosterLineFor,
+  rosterLinesFor,
+  safeInitial,
   wallLineFor,
   isTagged,
   sportTypeColor,
@@ -244,8 +245,8 @@ function WallCard({
           />
         ) : (
           <div className="w-12 h-12 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0 text-sm">
-            {a.athlete.firstname[0]}
-            {a.athlete.lastname[0]}
+            {safeInitial(a.athlete.firstname)}
+            {safeInitial(a.athlete.lastname)}
           </div>
         )}
 
@@ -305,6 +306,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 // ──────────────────── Roster ────────────────────
 function Roster({ members }: { members: ClubMember[] }) {
+  // Build the line map once — guarantees no duplicates within the visible roster.
+  const lines = rosterLinesFor(members);
+
   return (
     <section className="py-20 px-6 bg-bg">
       <div className="max-w-[1100px] mx-auto">
@@ -322,36 +326,41 @@ function Roster({ members }: { members: ClubMember[] }) {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {members.map((m, i) => (
-            <div
-              key={`${m.firstname}-${m.lastname}-${i}`}
-              className="bg-card rounded-xl border border-border p-4 flex items-center gap-3"
-            >
-              {m.profile && m.profile !== "avatar/athlete/large.png" ? (
-                <Image
-                  src={m.profile}
-                  alt={`${m.firstname} ${m.lastname[0]}.`}
-                  width={48}
-                  height={48}
-                  className="rounded-full object-cover shrink-0"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0">
-                  {m.firstname[0]}
-                  {m.lastname[0]}
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="font-semibold text-text text-sm truncate">
-                  {m.firstname} {m.lastname[0]}.
-                </div>
-                <div className="text-xs text-mist italic leading-snug mt-0.5">
-                  {rosterLineFor(m)}
+          {members.map((m, i) => {
+            const key = `${m.firstname} ${m.lastname}`;
+            const initials = `${safeInitial(m.firstname)}${safeInitial(
+              m.lastname
+            )}`;
+            return (
+              <div
+                key={`${m.firstname}-${m.lastname}-${i}`}
+                className="bg-card rounded-xl border border-border p-4 flex items-center gap-3"
+              >
+                {m.profile && m.profile !== "avatar/athlete/large.png" ? (
+                  <Image
+                    src={m.profile}
+                    alt={`${m.firstname} ${m.lastname[0]}.`}
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover shrink-0"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="font-semibold text-text text-sm truncate">
+                    {m.firstname} {m.lastname[0]}.
+                  </div>
+                  <div className="text-xs text-mist italic leading-snug mt-0.5">
+                    {lines.get(key) ?? ""}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

@@ -24,24 +24,117 @@ const ROSTER_LINES = [
   "Once rode through a passing shower and called it a rinse.",
   "Owns a road bike, a gravel bike, and zero regrets.",
   "Will ride 60 miles for a good lunch.",
+  "Has a favorite gas station. Don't ask why.",
+  "Average speed: deceptive. Never the slowest.",
+  "Climbs Haleakalā for fun. Allegedly.",
+  "Owns more chamois cream than groceries.",
+  "Quiet rider. Loud at the coffee stop.",
+  "First one out. Last one back. No witnesses.",
+  "Knows every shoulder on every road.",
+  "Has opinions about tire pressure. Strong ones.",
+  "Rides like the wind. Specifically: into it.",
+  "Counts climbs in feet. Like a native.",
+  "Always smiling at mile 40. We don't trust it.",
+  "Refuses Strava titles. Lets the data speak.",
+  "Has been seen ordering a second malasada.",
+  "Bonk avoidance specialist.",
+  "Will descend faster than physics allows.",
+  "Has a route for every wind direction.",
+  "Treats stop signs as stretching opportunities.",
+  "Keeps spare socks in the saddle bag. Iconic.",
+  "Once rode a century by accident.",
+  "Knows the trades like a paniolo knows pasture.",
+  "Pacelines of one. Always.",
+  "Has a thing for sunrise rides. Earned it.",
+  "Quietly putting in the work. Always.",
+  "The kind of rider who calls 30 mi 'a spin.'",
+  "Strong on hills. Stronger on the way home.",
+  "Coffee first. Climbing second. Conversation never.",
 ];
 
-const FOUNDER_LINE = "Founded the club. Rides solo, mostly. Roasts himself first.";
+const FOUNDER_LINE =
+  "Founded the club. Rides solo, mostly. Roasts himself first.";
 
-// Stable hash from a string → small int. So each member always gets the same line.
+// Stable hash from a string → small int.
 function hash(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return Math.abs(h);
 }
 
+// Seeded mulberry32 PRNG so the shuffle is deterministic per-roster.
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function memberKey(m: ClubMember): string {
+  return `${m.firstname} ${m.lastname}`;
+}
+
+function isFounder(m: ClubMember): boolean {
+  const f = m.firstname.toLowerCase();
+  return f.startsWith("vinic") || f.startsWith("vini");
+}
+
+/**
+ * Build a roster → line map with NO duplicates among the visible members.
+ * The mapping is stable for the same roster identity (members + order),
+ * so a member sees their assigned line consistently while it stays unique.
+ */
+export function rosterLinesFor(
+  members: ClubMember[]
+): Map<string, string> {
+  const result = new Map<string, string>();
+  const nonFounders: ClubMember[] = [];
+
+  for (const m of members) {
+    if (isFounder(m)) {
+      result.set(memberKey(m), FOUNDER_LINE);
+    } else {
+      nonFounders.push(m);
+    }
+  }
+
+  // Stable seed from the entire roster identity.
+  const seed = hash(members.map(memberKey).sort().join("|"));
+  const rng = mulberry32(seed);
+
+  // Fisher-Yates shuffle of the line pool with the seeded RNG.
+  const pool = [...ROSTER_LINES];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  // Assign in roster order. Pool is large enough that we never wrap.
+  nonFounders.forEach((m, i) => {
+    result.set(memberKey(m), pool[i % pool.length]);
+  });
+
+  return result;
+}
+
+// Kept for back-compat / single-member callers (no dedup guarantee).
 export function rosterLineFor(member: ClubMember): string {
-  const isFounder =
-    member.firstname.toLowerCase().startsWith("vinic") ||
-    member.firstname.toLowerCase().startsWith("vini");
-  if (isFounder) return FOUNDER_LINE;
-  const key = `${member.firstname} ${member.lastname}`;
-  return ROSTER_LINES[hash(key) % ROSTER_LINES.length];
+  if (isFounder(member)) return FOUNDER_LINE;
+  return ROSTER_LINES[hash(memberKey(member)) % ROSTER_LINES.length];
+}
+
+/**
+ * Safe initial — first letter character only.
+ * Usernames like "@JAW.SURF" lose the punctuation, so the avatar
+ * fallback never shows weird symbols like "@".
+ */
+export function safeInitial(name: string): string {
+  const m = name.match(/[A-Za-z]/);
+  return m ? m[0].toUpperCase() : "?";
 }
 
 // ── The Wall — one-line narration per ride ──────────────────────────
