@@ -45,7 +45,24 @@ export function rosterLineFor(member: ClubMember): string {
 }
 
 // ── The Wall — one-line narration per ride ──────────────────────────
+
+const TAGGED_LINES = [
+  "Answered the call. Mahalo for the tag.",
+  "Used the magic word. The Roster is watching.",
+  "Tagged us in. Free roast credit, redeemable anytime.",
+  "Played the hashtag right. We see you.",
+  "#cyclinghawaii spotted. Laura nodded.",
+];
+
+export function isTagged(a: ClubActivity): boolean {
+  return /#?cyclinghawaii/i.test(a.name);
+}
+
 export function wallLineFor(a: ClubActivity): string {
+  if (isTagged(a)) {
+    return TAGGED_LINES[hash(a.name) % TAGGED_LINES.length];
+  }
+
   const milesRaw = a.distance / 1609.34;
   const elevFt = a.total_elevation_gain * 3.28084;
   const first = a.athlete.firstname;
@@ -66,6 +83,28 @@ export function wallLineFor(a: ClubActivity): string {
     return `${first} took a quick ${Math.round(milesRaw)}. Better than the couch.`;
   }
   return `${first} clipped in. That counts for something.`;
+}
+
+// ── Sport-type accents for the Wall ─────────────────────────────────
+export function sportTypeColor(sport: string | undefined, type: string): {
+  label: string;
+  bg: string;
+  text: string;
+} {
+  const t = sport || type || "Ride";
+  switch (t) {
+    case "GravelRide":
+      return { label: "Gravel", bg: "bg-[#b45309]/15", text: "text-[#b45309]" };
+    case "MountainBikeRide":
+      return { label: "MTB", bg: "bg-[#059669]/15", text: "text-[#059669]" };
+    case "VirtualRide":
+      return { label: "Indoor", bg: "bg-[#7c3aed]/15", text: "text-[#7c3aed]" };
+    case "EBikeRide":
+      return { label: "E-Bike", bg: "bg-[#0ea5e9]/15", text: "text-[#0ea5e9]" };
+    case "Ride":
+    default:
+      return { label: "Road", bg: "bg-strava/15", text: "text-strava" };
+  }
 }
 
 // ── The Compass — fun comparisons for collective totals ─────────────
