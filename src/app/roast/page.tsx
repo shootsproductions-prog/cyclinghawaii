@@ -248,8 +248,26 @@ function Steps() {
           <Step
             num="3"
             title="Connect your Strava (private link)"
-            body="Coming soon. Active members will get invited to connect their Strava and unlock a personal page where Laura blogs every ride. Your link, your control. Quit anytime."
-            status="soon"
+            body="Click below to connect your Strava. We'll verify you're in the Cycling Hawaii club, then build your personal page. Your link, your control. Quit anytime by emailing laura@cyclinghawaii.com."
+            cta={
+              <a
+                href="/api/auth/strava/start"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-strava text-white font-semibold text-xs uppercase tracking-wider hover:bg-strava/90 transition-colors"
+              >
+                Connect with Strava
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </a>
+            }
+            status="open"
           />
         </div>
       </div>
