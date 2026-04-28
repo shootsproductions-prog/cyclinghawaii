@@ -5,17 +5,12 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 // `href` is an absolute path. `hash` jumps to a homepage section.
+// Top nav stays product-focused. Lifestyle/social links live in the Footer.
 const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "rides", label: "Rides" },
-  { href: "/live", label: "Live Tracker" },
   { href: "/club", label: "Club" },
   { href: "/roast", label: "Roast" },
-  { hash: "log", label: "Log Files" },
-  { hash: "scarab", label: "Scarab" },
-  { hash: "instagram", label: "Instagram" },
-  { hash: "youtube", label: "YouTube" },
-  { hash: "spotify", label: "Spotify" },
-  { hash: "partners", label: "Contact" },
+  { hash: "log", label: "Log" },
 ];
 
 export default function Nav() {
