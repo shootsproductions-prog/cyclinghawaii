@@ -9,6 +9,7 @@ const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "rides", label: "Rides" },
   { href: "/live", label: "Live Tracker" },
   { href: "/club", label: "Club" },
+  { href: "/roast", label: "Roast" },
   { hash: "log", label: "Log Files" },
   { hash: "scarab", label: "Scarab" },
   { hash: "instagram", label: "Instagram" },

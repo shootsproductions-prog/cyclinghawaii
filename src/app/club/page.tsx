@@ -16,6 +16,7 @@ import {
   milesCompare,
   elevationCompare,
 } from "@/lib/laura-club";
+import { assignRoles } from "@/lib/peloton-roles";
 
 export const metadata: Metadata = {
   title: "The Club — Cycling Hawaii",
@@ -63,7 +64,9 @@ export default async function ClubPage() {
         <Wall activities={wall.slice(0, 3)} avatarMap={avatarMap} />
       )}
 
-      {roster.length > 0 && <Roster members={roster} />}
+      {roster.length > 0 && club && (
+        <Roster members={roster} activities={club.activities} />
+      )}
 
       {conditions && <Conditions conditions={conditions} />}
 
@@ -305,9 +308,15 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 // ──────────────────── Roster ────────────────────
-function Roster({ members }: { members: ClubMember[] }) {
-  // Build the line map once — guarantees no duplicates within the visible roster.
+function Roster({
+  members,
+  activities,
+}: {
+  members: ClubMember[];
+  activities: ClubActivity[];
+}) {
   const lines = rosterLinesFor(members);
+  const roles = assignRoles(members, activities);
 
   return (
     <section className="py-20 px-6 bg-bg">
@@ -319,43 +328,50 @@ function Roster({ members }: { members: ClubMember[] }) {
           <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-2">
             The Twelve
           </h2>
-          <p className="text-mist text-base italic max-w-[520px] mx-auto">
-            Updated daily by Laura. Ride to stay drafted. Stay drafted to get
-            roasted.
+          <p className="text-mist text-base italic max-w-[560px] mx-auto">
+            Twelve riders. Twelve roles. Updated daily by Laura. Ride to keep
+            your spot.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {members.map((m, i) => {
             const key = `${m.firstname} ${m.lastname}`;
+            const memberKey = `${m.firstname} ${m.lastname[0]}.`;
             const initials = `${safeInitial(m.firstname)}${safeInitial(
               m.lastname
             )}`;
+            const role = roles.get(memberKey);
             return (
               <div
                 key={`${m.firstname}-${m.lastname}-${i}`}
-                className="bg-card rounded-xl border border-border p-4 flex items-center gap-3"
+                className="bg-card rounded-xl border border-border p-5 flex items-start gap-3"
               >
                 {m.profile && m.profile !== "avatar/athlete/large.png" ? (
                   <Image
                     src={m.profile}
-                    alt={`${m.firstname} ${m.lastname[0]}.`}
-                    width={48}
-                    height={48}
+                    alt={memberKey}
+                    width={56}
+                    height={56}
                     className="rounded-full object-cover shrink-0"
                     unoptimized
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0">
+                  <div className="w-14 h-14 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0">
                     {initials}
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="font-semibold text-text text-sm truncate">
                     {m.firstname} {m.lastname[0]}.
                   </div>
-                  <div className="text-xs text-mist italic leading-snug mt-0.5">
-                    {lines.get(key) ?? ""}
+                  {role && (
+                    <div className="inline-block text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-strava/10 text-strava mt-1.5 mb-1">
+                      {role.role}
+                    </div>
+                  )}
+                  <div className="text-xs text-mist italic leading-snug mt-1">
+                    {role?.blurb ?? lines.get(key) ?? ""}
                   </div>
                 </div>
               </div>
