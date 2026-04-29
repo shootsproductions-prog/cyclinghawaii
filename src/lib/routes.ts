@@ -45,13 +45,32 @@ const SUB_TYPE_LABEL: Record<number, FormattedRoute["type"]> = {
   5: "Mixed",
 };
 
-// Heuristic for "this is a Hawaii route" — names usually mention island
-// places. Catches Maui + Lanai + Big Island, excludes travel routes.
+// Heuristic for "this is a Hawaii / Cycling Hawaii route".
+// Catches Maui + Lanai + Big Island place names, plus generic markers
+// like "stage", "tour de maui", and "cycling hawaii" so Tour routes
+// always pass even if the name is short. We also check the route's
+// description text — that's where most Tour metadata lives.
 const HAWAII_KEYWORDS = [
+  // Generic Tour / brand markers
+  "stage",
+  "tour de maui",
+  "tour de hawaii",
+  "cycling hawaii",
+  "cyclinghawaii",
+  // Islands
   "maui",
   "lanai",
   "lana'i",
   "lanaʻi",
+  "kauai",
+  "kauaʻi",
+  "molokai",
+  "molokaʻi",
+  "oahu",
+  "oʻahu",
+  "hawaii island",
+  "big island",
+  // Maui places
   "kahakuloa",
   "haleakala",
   "haleakalā",
@@ -66,27 +85,41 @@ const HAWAII_KEYWORDS = [
   "kula",
   "paia",
   "pāʻia",
+  "pukalani",
   "wailea",
   "wailuku",
   "waianapanapa",
   "wainapanapa",
   "honolua",
   "honokohau",
+  "honokōhau",
   "kahului",
   "iao",
   "ʻīao",
   "twin falls",
+  "ho'okipa",
+  "hookipa",
+  "hoʻokipa",
+  "makena",
+  "mākena",
+  "launiupoko",
+  "kipahulu",
+  "lahainaluna",
+  // Big Island / other
   "kalaoa",
   "hilo",
   "kona",
   "honolulu",
-  "kauai",
-  "kauaʻi",
-  "molokai",
-  "molokaʻi",
+  "mauna kea",
+  "mauna loa",
+  // Lanai places
   "manele",
   "munroe",
   "lighthouse",
+  "club lanai",
+  "lopa",
+  "kalamapau",
+  // Vini's signature route names
   "skyline",
   "ride to the sun",
   "imua",
@@ -94,21 +127,14 @@ const HAWAII_KEYWORDS = [
   "veteran west",
   "aloha gravel",
   "upcountry",
-  "kahului",
-  "launiupoko",
-  "kipahulu",
-  "lahainaluna",
-  "club lanai",
-  "lopa",
-  "kalamapau",
-  "wainapanapa",
   "grandma",
   "figure 8",
+  "west maui",
 ];
 
-function isHawaiiRoute(name: string): boolean {
-  const n = name.toLowerCase();
-  return HAWAII_KEYWORDS.some((k) => n.includes(k));
+function isHawaiiRoute(name: string, description: string = ""): boolean {
+  const haystack = `${name} ${description}`.toLowerCase();
+  return HAWAII_KEYWORDS.some((k) => haystack.includes(k));
 }
 
 function formatRoute(r: StravaRouteRaw): FormattedRoute {
@@ -169,7 +195,7 @@ export const getMyRoutes = cache(async (): Promise<FormattedRoute[]> => {
 /** Just the Hawaii routes (filters out Patagonia, Germany, etc.) */
 export const getHawaiiRoutes = cache(async (): Promise<FormattedRoute[]> => {
   const all = await getMyRoutes();
-  return all.filter((r) => isHawaiiRoute(r.name));
+  return all.filter((r) => isHawaiiRoute(r.name, r.description));
 });
 
 /** Fetch a single route by ID. */
