@@ -46,7 +46,7 @@ function Hero({ count }: { count: number }) {
           The Library
         </div>
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
-          Maui Routes
+          Maui<span className="text-strava"> Routes</span>
         </h1>
         <p className="text-mist text-base md:text-lg max-w-[620px] mx-auto leading-relaxed">
           {count > 0

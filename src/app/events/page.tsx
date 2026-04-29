@@ -47,7 +47,7 @@ function Hero({ hasUpcoming }: { hasUpcoming: boolean }) {
           The Calendar
         </div>
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
-          Hawaiʻi Cycling Events
+          Hawaiʻi Cycling<span className="text-strava"> Events</span>
         </h1>
         <p className="text-mist text-base md:text-lg max-w-[640px] mx-auto leading-relaxed">
           {hasUpcoming

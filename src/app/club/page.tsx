@@ -121,14 +121,12 @@ function Hero() {
           The Club
         </div>
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-text leading-[0.95] mb-6">
-          Cycling is great.
-          <br />
-          We just don&apos;t worship it.
+          Just<span className="text-strava"> Ride.</span>
         </h1>
         <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
-          A club for riders who love the miles and skip the lectures. Laura
-          runs the books, the wall, and the roasts. Show up, ride your ride,
-          laugh at yourself. Aloha vibes only.
+          A club that doesn&apos;t take cycling more seriously than cycling
+          deserves. Laura runs the books, the wall, and the roasts. Show up.
+          Aloha vibes only.
         </p>
       </div>
     </section>
