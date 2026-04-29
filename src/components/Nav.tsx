@@ -11,7 +11,9 @@ const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "log", label: "Log" },
   { href: "/club", label: "Club" },
   { href: "/roast", label: "Roast" },
-  { href: "/tour", label: "Tour" },
+  // /tour and /routes exist as live pages but are intentionally
+  // unlinked from the nav while the Tour de Maui structure is still
+  // being built out. Direct URLs work for testing.
 ];
 
 export default function Nav() {
