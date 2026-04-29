@@ -8,9 +8,9 @@ import Image from "next/image";
 // Top nav stays product-focused. Lifestyle/social links live in the Footer.
 const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "rides", label: "Rides" },
+  { hash: "log", label: "Log" },
   { href: "/club", label: "Club" },
   { href: "/roast", label: "Roast" },
-  { hash: "log", label: "Log" },
 ];
 
 export default function Nav() {
