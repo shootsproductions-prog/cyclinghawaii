@@ -26,6 +26,14 @@ export interface TourStage {
   /** Strava route ID — placeholder using existing routes until Vini builds proper Tour routes. */
   routeId: string | null;
   routeName?: string; // for display when no route ID yet
+  /**
+   * Strava segment ID for legitimacy verification. When a tagged ride
+   * also contains an effort on this segment, the completion is marked
+   * "verified" instead of just "claimed". Optional — stages without a
+   * segmentId still accept tag-only completions (claimed status).
+   */
+  segmentId?: number;
+  segmentName?: string; // for display
   /** Approximate distance/elevation (used until route is wired) */
   distanceMi: number;
   elevationFt: number;

@@ -13,6 +13,47 @@ import type { StravaActivity } from "@/types/strava";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
+interface SegmentEffortLite {
+  elapsed_time: number;
+  segment: { id: number; name: string };
+}
+
+interface DetailedActivity extends StravaActivity {
+  segment_efforts?: SegmentEffortLite[];
+}
+
+/** Fetch full activity detail (with segment_efforts) for verification. */
+async function fetchActivityDetail(
+  activityId: number,
+  token: string
+): Promise<DetailedActivity | null> {
+  try {
+    const res = await fetch(
+      `${STRAVA_API_BASE}/activities/${activityId}?include_all_efforts=true`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        // Once an activity is uploaded, segment efforts are stable — long cache OK.
+        next: { revalidate: 86400 },
+      }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("fetchActivityDetail failed:", err);
+    return null;
+  }
+}
+
+function findSegmentMatch(
+  detail: DetailedActivity,
+  segmentId: number
+): SegmentEffortLite | null {
+  for (const effort of detail.segment_efforts ?? []) {
+    if (effort.segment?.id === segmentId) return effort;
+  }
+  return null;
+}
+
 /** Pull recent activities and detect any newly tagged Tour completions. */
 async function syncFromVini(): Promise<void> {
   if (!process.env.STRAVA_REFRESH_TOKEN) return;
@@ -28,12 +69,42 @@ async function syncFromVini(): Promise<void> {
     if (!res.ok) return;
     const activities: StravaActivity[] = await res.json();
 
+    // Already-recorded activity IDs (avoid re-fetching detail)
+    const currentYear = new Date().getFullYear();
+    const existing = await loadCompletions(currentYear);
+    const seenKeys = new Set(
+      existing.map((c) => `${c.activityId}-${c.stageNumber}`)
+    );
+
     // Group new completions by year
     const byYear = new Map<number, StageCompletion[]>();
     for (const a of activities) {
-      if (a.type !== "Ride" && a.sport_type !== "Ride" && a.sport_type !== "GravelRide") continue;
+      if (
+        a.type !== "Ride" &&
+        a.sport_type !== "Ride" &&
+        a.sport_type !== "GravelRide"
+      )
+        continue;
       const stage = findStageByActivity(a.name);
       if (!stage) continue;
+
+      const completionKey = `${a.id}-${stage.number}`;
+      if (seenKeys.has(completionKey)) continue;
+
+      // Verify if the stage has a segmentId
+      let verified = false;
+      let segmentEffortSeconds: number | undefined;
+      if (stage.segmentId) {
+        const detail = await fetchActivityDetail(a.id, token);
+        if (detail) {
+          const match = findSegmentMatch(detail, stage.segmentId);
+          if (match) {
+            verified = true;
+            segmentEffortSeconds = match.elapsed_time;
+          }
+        }
+      }
+
       const year = new Date(a.start_date_local).getFullYear();
       const completion: StageCompletion = {
         stageNumber: stage.number,
@@ -47,6 +118,8 @@ async function syncFromVini(): Promise<void> {
         movingMinutes: Math.round(a.moving_time / 60),
         completedAt: Date.now(),
         rideDate: a.start_date_local,
+        verified,
+        segmentEffortSeconds,
       };
       const list = byYear.get(year) ?? [];
       list.push(completion);
@@ -68,11 +141,13 @@ export interface AthleteStanding {
   firstname: string;
   lastname: string;
   stagesCompleted: number;
+  verifiedStages: number;
   totalElevationFt: number;
   totalMinutes: number;
   totalDistanceMi: number;
   firstCompletionAt: number;
   stageNumbers: number[]; // which stages they've finished
+  verifiedStageNumbers: number[]; // subset that are segment-verified
 }
 
 export interface JerseyHolder {
@@ -123,11 +198,13 @@ function buildStandings(
         firstname: c.athleteFirstname,
         lastname: c.athleteLastname,
         stagesCompleted: 1,
+        verifiedStages: c.verified ? 1 : 0,
         totalElevationFt: c.elevationFt,
         totalMinutes: c.movingMinutes,
         totalDistanceMi: c.distanceMi,
         firstCompletionAt: c.completedAt,
         stageNumbers: [c.stageNumber],
+        verifiedStageNumbers: c.verified ? [c.stageNumber] : [],
       });
     } else {
       // Tally cumulative even on re-rides of the same stage (rewards consistency)
@@ -137,6 +214,10 @@ function buildStandings(
       if (!existing.stageNumbers.includes(c.stageNumber)) {
         existing.stagesCompleted += 1;
         existing.stageNumbers.push(c.stageNumber);
+      }
+      if (c.verified && !existing.verifiedStageNumbers.includes(c.stageNumber)) {
+        existing.verifiedStages += 1;
+        existing.verifiedStageNumbers.push(c.stageNumber);
       }
     }
   }

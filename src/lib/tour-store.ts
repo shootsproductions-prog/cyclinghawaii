@@ -15,6 +15,11 @@ export interface StageCompletion {
   movingMinutes: number;
   completedAt: number; // unix ms — when we recorded it
   rideDate: string; // ISO
+  /** True if a Strava segment effort matching the stage's segmentId was
+   * detected during this activity. False = tag-only (claimed) completion. */
+  verified: boolean;
+  /** Elapsed time on the matching segment effort, in seconds. */
+  segmentEffortSeconds?: number;
 }
 
 interface TourYearLog {

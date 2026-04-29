@@ -354,8 +354,16 @@ function Standings({ standings }: { standings: TourStandings }) {
                 {i + 1}
               </div>
               <div>
-                <div className="font-semibold text-text text-sm">
+                <div className="font-semibold text-text text-sm flex items-center gap-1.5">
                   {r.firstname} {r.lastname[0]}.
+                  {r.verifiedStages > 0 && (
+                    <span
+                      title={`${r.verifiedStages} segment-verified`}
+                      className="text-[0.6rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700"
+                    >
+                      ✓ {r.verifiedStages}
+                    </span>
+                  )}
                 </div>
                 <div className="text-[0.65rem] text-mist uppercase tracking-wider mt-0.5">
                   Stages: {r.stageNumbers.sort((a, b) => a - b).join(", ")}
@@ -400,8 +408,17 @@ function StageList({ standings }: { standings: TourStandings }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TOUR_STAGES.map((s) => {
-            const count = standings.stageCompletionCounts.get(s.number) ?? 0;
-            return <StageCard key={s.number} stage={s} count={count} />;
+            const finishers = standings.stageFinishers.get(s.number) ?? [];
+            const count = finishers.length;
+            const verifiedCount = finishers.filter((f) => f.verified).length;
+            return (
+              <StageCard
+                key={s.number}
+                stage={s}
+                count={count}
+                verifiedCount={verifiedCount}
+              />
+            );
           })}
         </div>
       </div>
@@ -409,7 +426,15 @@ function StageList({ standings }: { standings: TourStandings }) {
   );
 }
 
-function StageCard({ stage, count }: { stage: TourStage; count: number }) {
+function StageCard({
+  stage,
+  count,
+  verifiedCount,
+}: {
+  stage: TourStage;
+  count: number;
+  verifiedCount: number;
+}) {
   const isCurrent = stage.month === new Date().getMonth() + 1;
   return (
     <div
@@ -433,10 +458,25 @@ function StageCard({ stage, count }: { stage: TourStage; count: number }) {
         <h3 className="font-[family-name:var(--font-space-grotesk)] font-bold text-text text-base leading-tight">
           {stage.name}
         </h3>
-        <div className="text-[0.65rem] uppercase tracking-wider text-mist mt-1">
-          {stage.type}
-          {stage.isLegendary && " · 👑"}
-          {stage.isSpecial && " · 🌺"}
+        <div className="text-[0.65rem] uppercase tracking-wider text-mist mt-1 flex items-center gap-2 flex-wrap">
+          <span>{stage.type}</span>
+          {stage.isLegendary && <span>· 👑</span>}
+          {stage.isSpecial && <span>· 🌺</span>}
+          {stage.segmentId ? (
+            <span
+              className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 normal-case tracking-normal"
+              title="Segment-verified stage"
+            >
+              ✓ Verified
+            </span>
+          ) : (
+            <span
+              className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-mist/15 text-mist normal-case tracking-normal"
+              title="Tag-only — segment not yet wired"
+            >
+              Tag-only
+            </span>
+          )}
         </div>
       </div>
 
@@ -457,7 +497,9 @@ function StageCard({ stage, count }: { stage: TourStage; count: number }) {
           <div className="font-semibold text-strava font-[family-name:var(--font-space-grotesk)]">
             {count}
           </div>
-          <div className="text-[0.55rem] uppercase tracking-wider text-mist">done</div>
+          <div className="text-[0.55rem] uppercase tracking-wider text-mist">
+            {verifiedCount > 0 ? `${verifiedCount} ✓ done` : "done"}
+          </div>
         </div>
       </div>
 
@@ -493,6 +535,16 @@ function HowItWorks() {
             <strong className="text-strava">#tdm-stage-N</strong> to your
             activity name on Strava (e.g. <code>Sunset spin #tdm-stage-1</code>
             ). The site detects it within 15 minutes and credits the stage.
+          </p>
+          <p>
+            <strong className="text-text">Verified vs claimed.</strong> Stages
+            tied to a Strava{" "}
+            <strong className="text-emerald-700">segment</strong> get an
+            automatic legitimacy check — your activity must contain a segment
+            effort during the ride. Verified completions show a{" "}
+            <span className="text-emerald-700 font-semibold">✓</span>. Tag-only
+            completions (when a stage has no segment yet) still count, just
+            without the checkmark. Both earn jersey points equally.
           </p>
           <p>
             <strong className="text-text">Four jerseys.</strong> Yellow = most
