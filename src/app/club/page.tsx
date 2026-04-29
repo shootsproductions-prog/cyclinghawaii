@@ -115,34 +115,21 @@ function buildRoster(club: ClubData, cap: number): ClubMember[] {
 // ───────────────────── Hero ─────────────────────
 function Hero() {
   return (
-    <section className="relative w-full h-[70vh] min-h-[480px] max-h-[720px] overflow-hidden">
-      <Image
-        src="/club/hero.jpg"
-        alt="Scarab at the summit of Haleakalā"
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-center"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-bg to-transparent" />
-
-      <div className="relative h-full flex items-end pb-16 px-6 md:px-12 lg:px-20">
-        <div className="max-w-[860px]">
-          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-3">
-            The Club
-          </div>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[0.95] mb-5">
-            Cycling is great.
-            <br />
-            We just don&apos;t worship it.
-          </h1>
-          <p className="text-white/85 text-base md:text-lg max-w-[640px]">
-            A club for riders who love the miles and skip the lectures. Laura
-            runs the books, the wall, and the roasts. Show up, ride your ride,
-            laugh at yourself. Aloha vibes only.
-          </p>
+    <section className="relative pt-32 pb-20 px-6 bg-gradient-to-b from-strava/10 via-bg to-bg overflow-hidden">
+      <div className="max-w-[860px] mx-auto text-center">
+        <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+          The Club
         </div>
+        <h1 className="font-[family-name:var(--font-space-grotesk)] text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-text leading-[0.95] mb-6">
+          Cycling is great.
+          <br />
+          We just don&apos;t worship it.
+        </h1>
+        <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
+          A club for riders who love the miles and skip the lectures. Laura
+          runs the books, the wall, and the roasts. Show up, ride your ride,
+          laugh at yourself. Aloha vibes only.
+        </p>
       </div>
     </section>
   );
