@@ -124,9 +124,8 @@ function Hero() {
           Just<span className="text-strava"> Ride.</span>
         </h1>
         <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
-          A club that doesn&apos;t take cycling more seriously than cycling
-          deserves. Laura runs the books, the wall, and the roasts. Show up.
-          Aloha vibes only.
+          Miles, weather, and the guts to call it a club. Laura runs the
+          books, the wall, and the roasts. Aloha vibes only.
         </p>
       </div>
     </section>
