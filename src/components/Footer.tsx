@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 const FOOTER_LINKS = [
+  { href: "/events", label: "Events", external: false },
   { href: "/live", label: "Live Tracker", external: false },
   { href: "/#scarab", label: "Scarab", external: false },
   { href: "https://instagram.com/cyclinghawaii", label: "Instagram", external: true },
