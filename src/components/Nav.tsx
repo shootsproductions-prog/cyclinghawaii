@@ -11,6 +11,7 @@ const links: { hash?: string; href?: string; label: string }[] = [
   { hash: "log", label: "Log" },
   { href: "/club", label: "Club" },
   { href: "/roast", label: "Roast" },
+  { href: "/tour", label: "Tour" },
 ];
 
 export default function Nav() {
