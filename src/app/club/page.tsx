@@ -125,7 +125,7 @@ function Hero() {
         </h1>
         <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
           No team kit, no drop rides, no podiums — and the audacity to call
-          it a club. Laura runs the rest.
+          it a club.
         </p>
       </div>
     </section>
