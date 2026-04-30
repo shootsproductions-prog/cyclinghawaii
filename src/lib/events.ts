@@ -80,6 +80,7 @@ export const EVENTS: CyclingEvent[] = [
     websiteUrl: "https://cycletothesun.com/",
     organizer: "Go Cycling Maui",
     cost: "$250 ($225 kamaʻāina) · Relay: $400 ($375 kamaʻāina)",
+    coverPhoto: "/events/cycle-to-the-sun.jpg",
     isFundraiser: true,
     hashtag: "#cycletothesun",
     lauraTake:
@@ -108,6 +109,7 @@ export const EVENTS: CyclingEvent[] = [
     registrationUrl: "https://www.bikereg.com/73691",
     organizer: "Hawaiʻi cycling community",
     cost: "See registration",
+    coverPhoto: "/events/dick-evans.jpg",
     hashtag: "#dickevans",
     lauraTake:
       "112 miles around Oʻahu. The course that gave the Iron Man its bike distance. Show up with the legs you've got — and the willingness to use all of them. There's no honor in finishing a race you can fake; this isn't one of those races.",
@@ -129,6 +131,7 @@ export const EVENTS: CyclingEvent[] = [
     organizer: "Hawaiʻi Bicycling League (HBL)",
     organizerUrl: "https://hbl.org/",
     cost: "HBL Members from $80 · General from $110 · International from $150 · Youth from $40",
+    coverPhoto: "/events/honolulu-century.jpg",
     isFundraiser: true,
     hashtag: "#honolulucentury",
     lauraTake:
@@ -247,6 +250,7 @@ export const EVENTS: CyclingEvent[] = [
     organizer: "Imua Family Services",
     organizerUrl: "https://discoverimua.com/",
     cost: "See registration",
+    coverPhoto: "/events/pedal-imua.jpg",
     isFundraiser: true,
     hashtag: "#pedalimua",
     lauraTake:

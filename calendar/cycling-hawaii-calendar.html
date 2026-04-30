@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hawaii Cycling Events Calendar</title>
+<!--
+  Hawaii Cycling Events — Interactive Calendar
+  Drop-in for cyclinghawaii.com
+  -------------------------------------------------------------
+  HOW TO EDIT EVENTS
+  Scroll to the EVENTS array near the bottom of this file. Each
+  event is an object with these fields:
+    id, title, date (YYYY-MM-DD), endDate (optional, for multi-day),
+    island   : "Oahu" | "Maui" | "Big Island" | "Kauai" | "Molokai"
+    type     : "Road" | "MTB" | "Gravel" | "Family" | "Race"
+    distance, elevation, location, time, description, url
+  -------------------------------------------------------------
+  HOW TO EMBED
+  Option A: paste this entire file's <body> contents (and <style>)
+            into a Custom HTML block on cyclinghawaii.com.
+  Option B: host this file and embed via:
+            <iframe src="/calendar.html" width="100%" height="900"
+                    style="border:0"></iframe>
+-->
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-soft: #94a3b8;
+    --accent: #0891b2;        /* single accent — ocean cyan */
+    --accent-soft: #ecfeff;
+    --accent-border: #a5f3fc;
+
+    /* type chip colors (muted, neutral-friendly) */
+    --road: #0891b2;
+    --mtb: #16a34a;
+    --gravel: #d97706;
+    --family: #7c3aed;
+    --race: #dc2626;
+
+    --radius: 10px;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .ch-cal {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+  }
+
+  /* ---------- Header ---------- */
+  .ch-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .ch-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+  .ch-sub { margin: 4px 0 0; color: var(--text-muted); font-size: 14px; }
+
+  .ch-monthnav {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ch-monthnav button {
+    background: transparent;
+    border: 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ch-monthnav button:hover { background: var(--surface-2); }
+  .ch-monthnav .ch-monthlabel {
+    font-weight: 600; padding: 0 12px; min-width: 150px; text-align: center;
+  }
+  .ch-monthnav .ch-today {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  /* ---------- Filters ---------- */
+  .ch-filters {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+  }
+  .ch-fgroup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ch-flabel { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+  .ch-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+  }
+  .ch-chip:hover { border-color: var(--accent); }
+  .ch-chip.is-active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+  .ch-chip .ch-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; background: var(--text-soft);
+  }
+  .ch-chip[data-type="Road"]    .ch-dot { background: var(--road); }
+  .ch-chip[data-type="MTB"]     .ch-dot { background: var(--mtb); }
+  .ch-chip[data-type="Gravel"]  .ch-dot { background: var(--gravel); }
+  .ch-chip[data-type="Family"]  .ch-dot { background: var(--family); }
+  .ch-chip[data-type="Race"]    .ch-dot { background: var(--race); }
+
+  .ch-clear {
+    margin-left: auto;
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .ch-clear:hover { color: var(--text); }
+
+  /* ---------- Calendar grid ---------- */
+  .ch-grid {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .ch-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .ch-weekdays div {
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+  }
+  .ch-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(108px, auto);
+  }
+  .ch-day {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+    position: relative;
+    background: var(--surface);
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 108px;
+  }
+  .ch-day:nth-child(7n) { border-right: 0; }
+  .ch-day.is-other { background: var(--surface-2); }
+  .ch-day.is-other .ch-daynum { color: var(--text-soft); }
+  .ch-day.is-today .ch-daynum {
+    background: var(--accent);
+    color: #fff;
+  }
+  .ch-daynum {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .ch-evt {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--text-soft);
+    border-radius: 6px;
+    background: #fff;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 1.25;
+    color: var(--text);
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background 0.12s ease, transform 0.12s ease;
+  }
+  .ch-evt:hover { background: var(--surface-2); transform: translateY(-1px); }
+  .ch-evt[data-type="Road"]    { border-left-color: var(--road); }
+  .ch-evt[data-type="MTB"]     { border-left-color: var(--mtb); }
+  .ch-evt[data-type="Gravel"]  { border-left-color: var(--gravel); }
+  .ch-evt[data-type="Family"]  { border-left-color: var(--family); }
+  .ch-evt[data-type="Race"]    { border-left-color: var(--race); }
+  .ch-evt-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+
+  .ch-more {
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .ch-more:hover { background: var(--surface-2); color: var(--text); }
+
+  .ch-empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* ---------- Modal ---------- */
+  .ch-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 16px;
+    z-index: 9999;
+  }
+  .ch-overlay.is-open { display: flex; }
+  .ch-modal {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    animation: chPop 0.18s ease-out;
+  }
+  @keyframes chPop {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .ch-mhead {
+    padding: 20px 22px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ch-mtitle { margin: 0; font-size: 19px; font-weight: 700; }
+  .ch-mmeta {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .ch-mmeta span { display: inline-flex; align-items: center; gap: 6px; }
+  .ch-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .ch-tag .ch-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .ch-mbody { padding: 16px 22px 20px; }
+  .ch-mstats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .ch-mstat {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .ch-mstat-l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .ch-mstat-v { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .ch-mdesc { font-size: 14px; color: var(--text); }
+  .ch-mfoot {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 12px 22px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .ch-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .ch-btn:hover { background: var(--surface-2); }
+  .ch-btn.is-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .ch-btn.is-primary:hover { background: #0e7490; border-color: #0e7490; }
+  .ch-mclose {
+    position: absolute;
+    /* placed inside .ch-mhead via JS-friendly markup */
+  }
+
+  .ch-disclaimer {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .ch-disclaimer a { color: var(--text-muted); }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 720px) {
+    .ch-days { grid-auto-rows: minmax(78px, auto); }
+    .ch-day  { min-height: 78px; padding: 4px; }
+    .ch-evt-title { display: none; }
+    .ch-evt { padding: 4px; justify-content: center; }
+    .ch-evt::before {
+      content: ""; display: inline-block;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+    .ch-evt[data-type="Road"]   { color: var(--road); }
+    .ch-evt[data-type="MTB"]    { color: var(--mtb); }
+    .ch-evt[data-type="Gravel"] { color: var(--gravel); }
+    .ch-evt[data-type="Family"] { color: var(--family); }
+    .ch-evt[data-type="Race"]   { color: var(--race); }
+    .ch-weekdays div { padding: 8px 4px; font-size: 10px; text-align: center; }
+    .ch-mstats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ch-cal" id="chCal">
+  <header class="ch-head">
+    <div>
+      <h1 class="ch-title">Hawaii Cycling Events</h1>
+      <p class="ch-sub">Rides, races, and group events across the Hawaiian Islands.</p>
+    </div>
+    <div class="ch-monthnav" role="group" aria-label="Month navigation">
+      <button type="button" id="chPrev" aria-label="Previous month">&larr;</button>
+      <span class="ch-monthlabel" id="chMonthLabel">—</span>
+      <button type="button" id="chNext" aria-label="Next month">&rarr;</button>
+      <button type="button" id="chToday" class="ch-today">Today</button>
+    </div>
+  </header>
+
+  <section class="ch-filters" aria-label="Filters">
+    <div class="ch-fgroup" id="chIslandFilters">
+      <span class="ch-flabel">Island</span>
+      <!-- chips injected by JS -->
+    </div>
+    <div class="ch-fgroup" id="chTypeFilters">
+      <span class="ch-flabel">Type</span>
+      <!-- chips injected by JS -->
+    </div>
+    <button type="button" class="ch-clear" id="chClear">Reset filters</button>
+  </section>
+
+  <div class="ch-grid">
+    <div class="ch-weekdays">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div>
+      <div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+    <div class="ch-days" id="chDays"></div>
+  </div>
+
+  <p class="ch-disclaimer">
+    Dates listed reflect typical or recently announced schedules. Always confirm
+    on the event organizer's website before traveling or registering.
+  </p>
+</div>
+
+<!-- Modal -->
+<div class="ch-overlay" id="chOverlay" role="dialog" aria-modal="true" aria-labelledby="chMTitle">
+  <div class="ch-modal">
+    <div class="ch-mhead" style="position:relative">
+      <h2 class="ch-mtitle" id="chMTitle">Event</h2>
+      <div class="ch-mmeta" id="chMMeta"></div>
+      <button type="button" id="chMClose" aria-label="Close"
+        style="position:absolute; top:12px; right:12px; background:transparent; border:0; font-size:22px; line-height:1; color:#94a3b8; cursor:pointer">&times;</button>
+    </div>
+    <div class="ch-mbody">
+      <div class="ch-mstats" id="chMStats"></div>
+      <p class="ch-mdesc" id="chMDesc"></p>
+    </div>
+    <div class="ch-mfoot">
+      <button type="button" class="ch-btn" id="chMCloseBtn">Close</button>
+      <a class="ch-btn is-primary" id="chMLink" href="#" target="_blank" rel="noopener">Event website &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   EVENTS — edit this list to manage your calendar
+   Required: id, title, date (YYYY-MM-DD), island, type
+   Optional: endDate, distance, elevation, location, time, description, url
+   ================================================================= */
+const EVENTS = [
+  /* ---------- 2026 (current season) ---------- */
+  {
+    id: "dick-evans-2026",
+    title: "Dick Evans Memorial Road Race",
+    date: "2026-05-30",
+    island: "Oahu",
+    type: "Race",
+    distance: "112 mi (full loop)",
+    elevation: "~6,500 ft",
+    location: "Circumnavigation of Oahu",
+    time: "5:30 AM start",
+    description: "Hawaii's signature one-day road race — a full loop of Oahu starting and finishing in Kapiolani Park. Categories from Cat 1/2 down to citizen/randonneur divisions.",
+    url: "https://www.hbl.org"
+  },
+  {
+    id: "cycle-to-the-sun-2026",
+    title: "Cycle to the Sun",
+    date: "2026-06-27",
+    island: "Maui",
+    type: "Race",
+    distance: "36 mi",
+    elevation: "10,023 ft",
+    location: "Paia → Haleakalā summit",
+    time: "6:30 AM start",
+    description: "One of the toughest paved climbs on earth — sea level to the 10,023-ft summit of Haleakalā in 36 miles. Timed event; expect alpine conditions at the top.",
+    url: "https://cycletothesun.com"
+  },
+  {
+    id: "kona-century-2026",
+    title: "Big Island Bike Festival — Kona Century",
+    date: "2026-08-15",
+    island: "Big Island",
+    type: "Road",
+    distance: "25 / 50 / 100 mi",
+    elevation: "Varies",
+    location: "Waikoloa → Hawi",
+    time: "6:00 AM start",
+    description: "Scenic supported century along the Kohala Coast and up to Hawi. Multiple distances, full SAG support, post-ride meal.",
+    url: "https://www.bigislandbikefest.com"
+  },
+  {
+    id: "honolulu-century-2026",
+    title: "Honolulu Century Ride",
+    date: "2026-09-27",
+    island: "Oahu",
+    type: "Family",
+    distance: "25 / 50 / 75 / 100 mi",
+    elevation: "~3,000 ft (100 mi)",
+    location: "Kapiolani Park → Swanzy Beach",
+    time: "6:00 AM start",
+    description: "Hawaii Bicycling League's flagship recreational ride — fully supported with aid stations, bike valet, and a finish-line festival. Open to all levels.",
+    url: "https://www.hbl.org"
+  },
+  {
+    id: "haleiwa-metric-2026",
+    title: "Haleiwa Metric Century",
+    date: "2026-05-09",
+    island: "Oahu",
+    type: "Road",
+    distance: "62 mi",
+    elevation: "~2,400 ft",
+    location: "North Shore Oahu",
+    time: "6:30 AM start",
+    description: "Quiet rural roads through Oahu's North Shore — pineapple fields, coastal cliffs, and a finish at Haleiwa town.",
+    url: "https://www.hbl.org"
+  },
+  {
+    id: "tantalus-hill-climb-2026",
+    title: "Tantalus Hill Climb",
+    date: "2026-07-18",
+    island: "Oahu",
+    type: "Race",
+    distance: "5.5 mi",
+    elevation: "~1,650 ft",
+    location: "Makiki → Round Top Drive",
+    time: "7:00 AM start",
+    description: "Short, sharp timed climb up Honolulu's most iconic ascent. Open to all categories with separate age-group results.",
+    url: "https://www.hbl.org"
+  },
+  {
+    id: "tour-de-cure-2026",
+    title: "Tour de Cure Hawaii",
+    date: "2026-10-04",
+    island: "Oahu",
+    type: "Family",
+    distance: "10 / 30 / 60 mi",
+    elevation: "Varies",
+    location: "Kapolei",
+    time: "7:00 AM start",
+    description: "American Diabetes Association charity ride. Family-friendly options and a community festival at the finish.",
+    url: "https://diabetes.org/tour"
+  },
+  {
+    id: "kauai-century-2026",
+    title: "Tour of the Garden Isle",
+    date: "2026-11-07",
+    island: "Kauai",
+    type: "Road",
+    distance: "30 / 60 / 100 mi",
+    elevation: "~5,000 ft (100 mi)",
+    location: "Lihue → Hanalei",
+    time: "6:30 AM start",
+    description: "Supported tour around Kauai's east and north shores. Few cars, lush scenery, and the finish at Hanalei Bay.",
+    url: "#"
+  },
+  {
+    id: "maui-mtb-series-1-2026",
+    title: "Maui MTB Series — Round 2",
+    date: "2026-05-16",
+    island: "Maui",
+    type: "MTB",
+    distance: "XC course, ~12 mi",
+    elevation: "~1,800 ft",
+    location: "Makawao Forest Reserve",
+    time: "8:00 AM start",
+    description: "Cross-country mountain bike race in upcountry Maui. Beginner, sport, and expert categories.",
+    url: "#"
+  },
+  {
+    id: "kahuku-gravel-2026",
+    title: "Kahuku Gravel Grinder",
+    date: "2026-06-13",
+    island: "Oahu",
+    type: "Gravel",
+    distance: "40 / 70 mi",
+    elevation: "~3,200 ft",
+    location: "Kahuku → Kaena Point",
+    time: "6:30 AM start",
+    description: "Hawaii's premier gravel event — pineapple-field doubletrack, North Shore singletrack, and a long beach push to Kaena Point.",
+    url: "#"
+  },
+  {
+    id: "lanai-traverse-2026",
+    title: "Lanai Traverse (Invitational)",
+    date: "2026-09-12",
+    island: "Maui",
+    type: "Gravel",
+    distance: "55 mi",
+    elevation: "~4,800 ft",
+    location: "Manele → Garden of the Gods",
+    time: "6:00 AM start",
+    description: "Limited-entry gravel route across Lanai with red-dirt descents and a final climb to Keahiakawelo (Garden of the Gods).",
+    url: "#"
+  },
+  {
+    id: "hawi-loop-charity-2026",
+    title: "Hawi Loop Charity Ride",
+    date: "2026-08-29",
+    island: "Big Island",
+    type: "Family",
+    distance: "20 / 45 mi",
+    elevation: "~2,000 ft",
+    location: "Hawi Town",
+    time: "7:00 AM start",
+    description: "Community ride benefiting North Kohala youth cycling. Aid stations, taco truck, and live music at the finish.",
+    url: "#"
+  },
+  {
+    id: "kona-coast-tt-2026",
+    title: "Kona Coast Time Trial",
+    date: "2026-04-25",
+    island: "Big Island",
+    type: "Race",
+    distance: "20 km",
+    elevation: "Flat (rolling)",
+    location: "Queen K Highway",
+    time: "6:00 AM start",
+    description: "Fast TT on the Ironman bike course. Individual and team time trial categories.",
+    url: "#"
+  },
+
+  /* ---------- 2027 (early season preview) ---------- */
+  {
+    id: "iao-stage-2027",
+    title: "Iao Stage Race",
+    date: "2027-02-13",
+    endDate: "2027-02-15",
+    island: "Maui",
+    type: "Race",
+    distance: "3-stage omnium",
+    elevation: "Varies",
+    location: "Central & West Maui",
+    time: "Stage start times vary",
+    description: "Three-day omnium: a TT, a circuit race, and a queen-stage road race. Hawaii's most competitive stage event.",
+    url: "#"
+  },
+  {
+    id: "valentines-ride-2027",
+    title: "Valentine's Day Sunrise Ride",
+    date: "2027-02-14",
+    island: "Oahu",
+    type: "Family",
+    distance: "20 mi",
+    elevation: "Flat",
+    location: "Ala Moana → Hawaii Kai",
+    time: "6:30 AM start",
+    description: "Casual social ride along Oahu's south shore with a coffee stop at the turnaround. All paces welcome.",
+    url: "#"
+  },
+  {
+    id: "north-shore-mtb-2027",
+    title: "North Shore MTB Enduro",
+    date: "2027-03-21",
+    island: "Oahu",
+    type: "MTB",
+    distance: "5 timed stages",
+    elevation: "~3,000 ft",
+    location: "Kaaawa Valley",
+    time: "8:00 AM start",
+    description: "Five-stage enduro through Kaaawa's jungle singletrack. Shuttles between stages provided.",
+    url: "#"
+  }
+];
+
+/* =================================================================
+   App
+   ================================================================= */
+(function () {
+  const ISLANDS = ["Oahu", "Maui", "Big Island", "Kauai", "Molokai"];
+  const TYPES   = ["Road", "MTB", "Gravel", "Family", "Race"];
+
+  const state = {
+    cursor: new Date(), // current month being viewed
+    islands: new Set(),
+    types: new Set(),
+  };
+
+  // Snap cursor to first of month
+  state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth(), 1);
+
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- Filters ---------- */
+  function buildFilters() {
+    const islandWrap = $("chIslandFilters");
+    const typeWrap   = $("chTypeFilters");
+
+    ISLANDS.forEach((name) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ch-chip";
+      b.dataset.island = name;
+      b.textContent = name;
+      b.addEventListener("click", () => {
+        b.classList.toggle("is-active");
+        if (state.islands.has(name)) state.islands.delete(name);
+        else state.islands.add(name);
+        render();
+      });
+      islandWrap.appendChild(b);
+    });
+
+    TYPES.forEach((name) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ch-chip";
+      b.dataset.type = name;
+      const dot = document.createElement("span");
+      dot.className = "ch-dot";
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(name));
+      b.addEventListener("click", () => {
+        b.classList.toggle("is-active");
+        if (state.types.has(name)) state.types.delete(name);
+        else state.types.add(name);
+        render();
+      });
+      typeWrap.appendChild(b);
+    });
+
+    $("chClear").addEventListener("click", () => {
+      state.islands.clear();
+      state.types.clear();
+      document.querySelectorAll(".ch-chip.is-active").forEach((c) => c.classList.remove("is-active"));
+      render();
+    });
+  }
+
+  /* ---------- Calendar render ---------- */
+  function fmtMonthLabel(d) {
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  }
+  function ymd(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  function parseYmd(s) {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function isSameDay(a, b) {
+    return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+  }
+
+  function eventMatchesFilters(e) {
+    if (state.islands.size && !state.islands.has(e.island)) return false;
+    if (state.types.size && !state.types.has(e.type)) return false;
+    return true;
+  }
+
+  function eventsOnDay(d) {
+    return EVENTS
+      .filter(eventMatchesFilters)
+      .filter((e) => {
+        const start = parseYmd(e.date);
+        const end = e.endDate ? parseYmd(e.endDate) : start;
+        return d >= stripTime(start) && d <= stripTime(end);
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  function stripTime(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function render() {
+    $("chMonthLabel").textContent = fmtMonthLabel(state.cursor);
+
+    const days = $("chDays");
+    days.innerHTML = "";
+
+    const year = state.cursor.getFullYear();
+    const month = state.cursor.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const startDayOfWeek = firstOfMonth.getDay(); // 0 Sun
+    const gridStart = new Date(year, month, 1 - startDayOfWeek);
+
+    const today = stripTime(new Date());
+
+    // 6 weeks × 7 days = 42 cells
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      const cell = document.createElement("div");
+      cell.className = "ch-day";
+      if (d.getMonth() !== month) cell.classList.add("is-other");
+      if (isSameDay(d, today)) cell.classList.add("is-today");
+
+      const num = document.createElement("span");
+      num.className = "ch-daynum";
+      num.textContent = d.getDate();
+      cell.appendChild(num);
+
+      const dayEvents = eventsOnDay(d);
+      const visible = dayEvents.slice(0, 3);
+      visible.forEach((e) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "ch-evt";
+        el.dataset.type = e.type;
+        el.title = `${e.title} — ${e.island}`;
+        const t = document.createElement("span");
+        t.className = "ch-evt-title";
+        t.textContent = e.title;
+        el.appendChild(t);
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          openModal(e);
+        });
+        cell.appendChild(el);
+      });
+      if (dayEvents.length > visible.length) {
+        const more = document.createElement("span");
+        more.className = "ch-more";
+        more.textContent = `+${dayEvents.length - visible.length} more`;
+        more.addEventListener("click", () => {
+          // open the first hidden one — simple fallback
+          openModal(dayEvents[visible.length]);
+        });
+        cell.appendChild(more);
+      }
+
+      days.appendChild(cell);
+    }
+  }
+
+  /* ---------- Modal ---------- */
+  function openModal(e) {
+    $("chMTitle").textContent = e.title;
+
+    const meta = $("chMMeta");
+    meta.innerHTML = "";
+    const dateLabel = formatDateRange(e);
+    meta.innerHTML = `
+      <span>📅 ${dateLabel}</span>
+      <span>📍 ${escapeHtml(e.location || e.island)}</span>
+      <span class="ch-tag" data-type="${e.type}">
+        <span class="ch-dot" style="background:${typeColor(e.type)}"></span>${e.type}
+      </span>
+      <span class="ch-tag">${escapeHtml(e.island)}</span>
+    `;
+
+    const stats = $("chMStats");
+    stats.innerHTML = "";
+    [
+      ["Distance", e.distance],
+      ["Elevation", e.elevation],
+      ["Start", e.time],
+    ].forEach(([label, val]) => {
+      if (!val) return;
+      const cell = document.createElement("div");
+      cell.className = "ch-mstat";
+      cell.innerHTML = `<div class="ch-mstat-l">${label}</div><div class="ch-mstat-v">${escapeHtml(val)}</div>`;
+      stats.appendChild(cell);
+    });
+
+    $("chMDesc").textContent = e.description || "";
+
+    const link = $("chMLink");
+    if (e.url && e.url !== "#") {
+      link.href = e.url;
+      link.style.display = "";
+      link.textContent = "Event website →";
+    } else {
+      link.href = "#";
+      link.style.display = "none";
+    }
+
+    $("chOverlay").classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal() {
+    $("chOverlay").classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+  function typeColor(t) {
+    return ({ Road:"#0891b2", MTB:"#16a34a", Gravel:"#d97706", Family:"#7c3aed", Race:"#dc2626" })[t] || "#94a3b8";
+  }
+  function formatDateRange(e) {
+    const opts = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
+    const start = parseYmd(e.date).toLocaleDateString("en-US", opts);
+    if (!e.endDate) return start;
+    const end = parseYmd(e.endDate).toLocaleDateString("en-US", opts);
+    return `${start} – ${end}`;
+  }
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (c) => (
+      { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c]
+    ));
+  }
+
+  /* ---------- Wiring ---------- */
+  $("chPrev").addEventListener("click", () => {
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
+    render();
+  });
+  $("chNext").addEventListener("click", () => {
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
+    render();
+  });
+  $("chToday").addEventListener("click", () => {
+    const t = new Date();
+    state.cursor = new Date(t.getFullYear(), t.getMonth(), 1);
+    render();
+  });
+  $("chMClose").addEventListener("click", closeModal);
+  $("chMCloseBtn").addEventListener("click", closeModal);
+  $("chOverlay").addEventListener("click", (e) => {
+    if (e.target === $("chOverlay")) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
+
+  buildFilters();
+  render();
+})();
+</script>
+</body>
+</html>
