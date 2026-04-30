@@ -60,6 +60,10 @@ export default async function ClubPage() {
     <main>
       <Hero />
 
+      {roster.length > 0 && club && (
+        <InnerCircle members={roster} activities={club.activities} />
+      )}
+
       {wall.length > 0 && (
         <Wall activities={wall.slice(0, 3)} avatarMap={avatarMap} />
       )}
@@ -129,6 +133,254 @@ function Hero() {
         </p>
       </div>
     </section>
+  );
+}
+
+// ────────────────── The Inner Circle ──────────────────
+function InnerCircle({
+  members,
+  activities,
+}: {
+  members: ClubMember[];
+  activities: ClubActivity[];
+}) {
+  // Tally miles per member from the recent activities feed.
+  const milesPerMember = new Map<string, number>();
+  for (const m of members) {
+    milesPerMember.set(`${m.firstname} ${m.lastname[0]}.`, 0);
+  }
+  for (const a of activities) {
+    if (
+      a.type !== "Ride" &&
+      a.sport_type !== "Ride" &&
+      a.sport_type !== "GravelRide"
+    )
+      continue;
+    const key = `${a.athlete.firstname} ${a.athlete.lastname[0]}.`;
+    if (!milesPerMember.has(key)) continue;
+    milesPerMember.set(
+      key,
+      (milesPerMember.get(key) ?? 0) + a.distance / 1609.34
+    );
+  }
+
+  // Rank members by miles desc; tie-break alphabetical.
+  const ranked = [...members].sort((a, b) => {
+    const ak = `${a.firstname} ${a.lastname[0]}.`;
+    const bk = `${b.firstname} ${b.lastname[0]}.`;
+    const am = milesPerMember.get(ak) ?? 0;
+    const bm = milesPerMember.get(bk) ?? 0;
+    if (bm !== am) return bm - am;
+    return ak.localeCompare(bk);
+  });
+
+  // Tier into rings: top 3 inner, next 6 middle, rest outer.
+  const total = ranked.length;
+  const innerCount = Math.min(3, total);
+  const middleCount = Math.min(6, Math.max(0, total - innerCount));
+  const inner = ranked.slice(0, innerCount);
+  const middle = ranked.slice(innerCount, innerCount + middleCount);
+  const outer = ranked.slice(innerCount + middleCount);
+
+  const leaderKey =
+    ranked.length > 0
+      ? `${ranked[0].firstname} ${ranked[0].lastname[0]}.`
+      : null;
+
+  // Ring radii as % of container (container is aspect-square).
+  const RINGS = { inner: 18, middle: 32, outer: 43 };
+
+  return (
+    <section className="py-20 px-6 bg-bg">
+      <div className="max-w-[900px] mx-auto">
+        <div className="text-center mb-12">
+          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
+            The Inner Circle
+          </div>
+          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text mb-3">
+            Center is<span className="text-strava"> earned.</span>
+          </h2>
+          <p className="text-mist text-base italic max-w-[520px] mx-auto">
+            The Twelve, plotted by miles in the last 30-ish club rides.
+            Closer to center = more active. Updated daily.
+          </p>
+        </div>
+
+        <div className="relative w-full max-w-[600px] aspect-square mx-auto">
+          {/* SVG ring guides */}
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 600 600"
+            aria-hidden
+          >
+            <circle
+              cx={300}
+              cy={300}
+              r={258}
+              stroke="#e5e5e5"
+              strokeWidth={1}
+              fill="none"
+              strokeDasharray="3,5"
+            />
+            <circle
+              cx={300}
+              cy={300}
+              r={192}
+              stroke="#e5e5e5"
+              strokeWidth={1}
+              fill="none"
+              strokeDasharray="3,5"
+            />
+            <circle
+              cx={300}
+              cy={300}
+              r={108}
+              stroke="#e5e5e5"
+              strokeWidth={1}
+              fill="none"
+              strokeDasharray="3,5"
+            />
+          </svg>
+
+          {/* Center logo */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 md:w-16 md:h-16 rounded-full bg-card border-2 border-strava shadow-lg flex items-center justify-center overflow-hidden z-10">
+            <Image
+              src="/logo-orange.png"
+              alt="Cycling Hawaii"
+              width={64}
+              height={64}
+              className="w-full h-full object-contain p-1"
+            />
+          </div>
+
+          {/* Rider avatars */}
+          {inner.map((m, i) => {
+            const angle = (i / inner.length) * 2 * Math.PI - Math.PI / 2;
+            const x = 50 + RINGS.inner * Math.cos(angle);
+            const y = 50 + RINGS.inner * Math.sin(angle);
+            const key = `${m.firstname} ${m.lastname[0]}.`;
+            return (
+              <RiderAvatar
+                key={`inner-${i}`}
+                member={m}
+                x={x}
+                y={y}
+                ring="inner"
+                isLeader={key === leaderKey}
+                miles={milesPerMember.get(key) ?? 0}
+              />
+            );
+          })}
+
+          {middle.map((m, i) => {
+            const angle = (i / middle.length) * 2 * Math.PI - Math.PI / 2;
+            const x = 50 + RINGS.middle * Math.cos(angle);
+            const y = 50 + RINGS.middle * Math.sin(angle);
+            const key = `${m.firstname} ${m.lastname[0]}.`;
+            return (
+              <RiderAvatar
+                key={`middle-${i}`}
+                member={m}
+                x={x}
+                y={y}
+                ring="middle"
+                isLeader={false}
+                miles={milesPerMember.get(key) ?? 0}
+              />
+            );
+          })}
+
+          {outer.map((m, i) => {
+            const angle = (i / outer.length) * 2 * Math.PI - Math.PI / 2;
+            const x = 50 + RINGS.outer * Math.cos(angle);
+            const y = 50 + RINGS.outer * Math.sin(angle);
+            const key = `${m.firstname} ${m.lastname[0]}.`;
+            return (
+              <RiderAvatar
+                key={`outer-${i}`}
+                member={m}
+                x={x}
+                y={y}
+                ring="outer"
+                isLeader={false}
+                miles={milesPerMember.get(key) ?? 0}
+              />
+            );
+          })}
+        </div>
+
+        <p className="text-center text-mist text-xs italic mt-8">
+          Hover any rider to see their recent miles. The leader gets a glow.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function RiderAvatar({
+  member,
+  x,
+  y,
+  ring,
+  isLeader,
+  miles,
+}: {
+  member: ClubMember;
+  x: number;
+  y: number;
+  ring: "inner" | "middle" | "outer";
+  isLeader: boolean;
+  miles: number;
+}) {
+  const sizeCls =
+    ring === "inner"
+      ? "w-14 h-14 md:w-16 md:h-16"
+      : ring === "middle"
+      ? "w-12 h-12 md:w-14 md:h-14"
+      : "w-10 h-10 md:w-12 md:h-12";
+  const opacityCls = ring === "outer" ? "opacity-90" : "";
+  const initials = `${safeInitial(member.firstname)}${safeInitial(
+    member.lastname
+  )}`;
+
+  return (
+    <div
+      className={`group absolute -translate-x-1/2 -translate-y-1/2 ${sizeCls} ${opacityCls} rounded-full overflow-visible hover:z-20 hover:scale-110 transition-transform`}
+      style={{ left: `${x}%`, top: `${y}%` }}
+    >
+      <div
+        className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
+          isLeader
+            ? "border-strava shadow-[0_0_0_4px_rgba(252,82,0,0.2)]"
+            : "border-white shadow-md"
+        }`}
+      >
+        {member.profile && member.profile !== "avatar/athlete/large.png" ? (
+          <Image
+            src={member.profile}
+            alt={`${member.firstname} ${member.lastname[0]}.`}
+            width={64}
+            height={64}
+            className="w-full h-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full bg-strava/15 text-strava flex items-center justify-center font-bold text-xs">
+            {initials}
+          </div>
+        )}
+      </div>
+
+      {/* Tooltip */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-text text-white text-[0.7rem] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+        <div className="font-bold">
+          {member.firstname} {member.lastname[0]}.
+        </div>
+        <div className="text-white/70 font-mono">
+          {Math.round(miles)} mi recent
+        </div>
+      </div>
+    </div>
   );
 }
 
