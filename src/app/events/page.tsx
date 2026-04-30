@@ -96,7 +96,7 @@ function Hero({ hasUpcoming }: { hasUpcoming: boolean }) {
         </h1>
         <p className="text-mist text-base md:text-lg max-w-[640px] mx-auto leading-relaxed">
           {hasUpcoming
-            ? "Where to ride. When to register. Who to roast. Curated by Vini, narrated by Laura."
+            ? "Pick a date. Plan the ride. Show up rested."
             : "Calendar's quiet right now. New events drop here as we hear about them."}
         </p>
       </div>
@@ -348,22 +348,14 @@ function SubmitCTA() {
   return (
     <section className="py-20 px-6 bg-surface border-t border-border">
       <div className="max-w-[700px] mx-auto text-center">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-          Got an Event?
-        </div>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold tracking-tight text-text mb-4">
-          Tell Laura about it
+        <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold tracking-tight text-text mb-6">
+          List your event here.
         </h2>
-        <p className="text-mist text-sm md:text-base mb-6 max-w-[520px] mx-auto leading-relaxed">
-          Hosting a Hawaiʻi cycling event? Drop the details — date, location,
-          link — and we&apos;ll get it on the calendar. Free to list. No
-          podiums in our voice either.
-        </p>
         <a
           href="mailto:laura@cyclinghawaii.com?subject=Event%20Submission"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors"
         >
-          Email laura@cyclinghawaii.com
+          Email Laura
           <svg
             width="14"
             height="14"
