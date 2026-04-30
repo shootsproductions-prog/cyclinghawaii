@@ -124,7 +124,7 @@ function Hero() {
           Just<span className="text-strava"> Ride.</span>
         </h1>
         <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
-          Miles, weather, rainbows, coffee tours — and the audacity to call
+          No team kit, no drop rides, no podiums — and the audacity to call
           it a club. Laura runs the rest.
         </p>
       </div>
