@@ -10,13 +10,94 @@ import { getMauiConditions, type MauiConditions } from "@/lib/conditions";
 import {
   rosterLinesFor,
   safeInitial,
-  wallLineFor,
   isTagged,
   sportTypeColor,
   milesCompare,
   elevationCompare,
 } from "@/lib/laura-club";
 import { assignRoles } from "@/lib/peloton-roles";
+import { getAccessToken } from "@/lib/strava";
+
+const STRAVA_API_BASE = "https://www.strava.com/api/v3";
+
+/**
+ * Fetch ride descriptions for any Wall items that are by Vini. The Strava
+ * club activities endpoint returns summary shape only (no descriptions),
+ * but for activities we own we can match by name+distance against our own
+ * /athlete/activities feed and fetch detail for the description text.
+ *
+ * Returns a Map<wallIndex, descriptionString> — only populated for matched
+ * Vini rides. Other riders' descriptions aren't accessible via the API
+ * unless they connect their own Strava (via /roast OAuth).
+ */
+async function fetchWallDescriptions(
+  wallActivities: ClubActivity[]
+): Promise<Map<number, string>> {
+  const result = new Map<number, string>();
+  if (!process.env.STRAVA_REFRESH_TOKEN) return result;
+
+  // Filter to candidate Vini items first — skip the work entirely if none.
+  const viniIndices: number[] = [];
+  wallActivities.forEach((a, i) => {
+    if (a.athlete.firstname.toLowerCase().startsWith("vini")) {
+      viniIndices.push(i);
+    }
+  });
+  if (viniIndices.length === 0) return result;
+
+  try {
+    const token = await getAccessToken();
+
+    // Pull Vini's recent activity summaries (cached for the ISR window)
+    const summariesRes = await fetch(
+      `${STRAVA_API_BASE}/athlete/activities?per_page=30`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        next: { revalidate: 900, tags: ["strava-activities"] },
+      }
+    );
+    if (!summariesRes.ok) return result;
+    const summaries: Array<{
+      id: number;
+      name: string;
+      distance: number;
+    }> = await summariesRes.json();
+
+    // For each Vini wall item, find the matching summary, then detail-fetch
+    // for the description.
+    for (const i of viniIndices) {
+      const a = wallActivities[i];
+      const wallDistMi = Math.round(a.distance / 1609.34);
+      const match = summaries.find(
+        (s) =>
+          s.name === a.name &&
+          Math.abs(Math.round(s.distance / 1609.34) - wallDistMi) <= 1
+      );
+      if (!match) continue;
+
+      try {
+        const detailRes = await fetch(
+          `${STRAVA_API_BASE}/activities/${match.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            // Detail caches 24h — descriptions rarely change after upload
+            next: { revalidate: 86400 },
+          }
+        );
+        if (!detailRes.ok) continue;
+        const detail: { description?: string } = await detailRes.json();
+        const desc = (detail.description || "").trim();
+        if (desc) result.set(i, desc);
+      } catch (err) {
+        console.error("Wall description detail fetch failed:", err);
+      }
+    }
+  } catch (err) {
+    console.error("fetchWallDescriptions failed:", err);
+  }
+
+  return result;
+}
 
 export const metadata: Metadata = {
   title: "The Club — Cycling Hawaii",
@@ -60,6 +141,13 @@ export default async function ClubPage() {
   // widget for elsewhere if we ever want it back.
   void conditions;
 
+  // Pull descriptions for Wall items that are by Vini. Other riders'
+  // descriptions aren't fetchable via the Strava API until they connect
+  // their own account (via /roast). When empty, the Wall card just hides
+  // the description line.
+  const wallTop3 = wall.slice(0, 3);
+  const wallDescriptions = await fetchWallDescriptions(wallTop3);
+
   return (
     <main>
       <Hero />
@@ -76,8 +164,12 @@ export default async function ClubPage() {
         />
       )}
 
-      {wall.length > 0 && (
-        <Wall activities={wall.slice(0, 3)} avatarMap={avatarMap} />
+      {wallTop3.length > 0 && (
+        <Wall
+          activities={wallTop3}
+          avatarMap={avatarMap}
+          descriptions={wallDescriptions}
+        />
       )}
 
       <Call />
@@ -444,9 +536,11 @@ function RiderAvatar({
 function Wall({
   activities,
   avatarMap,
+  descriptions,
 }: {
   activities: ClubActivity[];
   avatarMap: Map<string, string>;
+  descriptions: Map<number, string>;
 }) {
   return (
     <section className="py-20 px-6 bg-surface">
@@ -459,13 +553,18 @@ function Wall({
             Recent rides in the club
           </h2>
           <p className="text-mist text-base italic">
-            Strava records the data. Laura tells the story.
+            Pulled live from Strava. Riders speak for themselves.
           </p>
         </div>
 
         <div className="space-y-4">
           {activities.map((a, i) => (
-            <WallCard key={i} activity={a} avatarMap={avatarMap} />
+            <WallCard
+              key={i}
+              activity={a}
+              avatarMap={avatarMap}
+              description={descriptions.get(i)}
+            />
           ))}
         </div>
 
@@ -497,7 +596,9 @@ function Wall({
 function WallCard({
   activity,
   avatarMap,
+  description,
 }: {
+  description?: string;
   activity: ClubActivity;
   avatarMap: Map<string, string>;
 }) {
@@ -576,10 +677,14 @@ function WallCard({
             <Stat label="mph" value={avgSpeed > 0 ? avgSpeed.toString() : "—"} />
           </div>
 
-          {/* Laura's line */}
-          <div className="text-mist text-sm italic border-t border-border pt-3">
-            {wallLineFor(a)}
-          </div>
+          {/* Rider's own description from Strava (Vini's rides only —
+              other riders' descriptions aren't accessible until they
+              connect via /roast). Hidden when empty. */}
+          {description && (
+            <div className="text-mist text-sm italic border-t border-border pt-3 whitespace-pre-line">
+              {description}
+            </div>
+          )}
         </div>
       </div>
     </div>
