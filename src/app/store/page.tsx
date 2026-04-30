@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-export default function StorePage() {
-  const grouped = getGroupedProducts();
+export default async function StorePage() {
+  const grouped = await getGroupedProducts();
   const hasProducts = grouped.some((g) => g.products.length > 0);
 
   return (
@@ -105,6 +105,7 @@ function ProductCard({ product }: { product: StoreProduct }) {
             fill
             sizes="(min-width: 1024px) 360px, (min-width: 768px) 50vw, 100vw"
             className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-6">

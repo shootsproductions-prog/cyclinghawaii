@@ -1,27 +1,35 @@
 // ──────────────────────────────────────────────────────────────────
-//  Cycling Hawaii Store — product catalog.
+//  Cycling Hawaii Store — Printful-backed catalog
 // ──────────────────────────────────────────────────────────────────
 //
-//  HOW TO ADD A NEW PRODUCT
+//  HOW THE STORE WORKS NOW
 //
-//  1. Drop the photo(s) at  /public/store/[slug]/main.jpg
-//                           /public/store/[slug]/2.jpg  (optional extras)
+//  Products live in Printful (https://www.printful.com/dashboard).
+//  This file fetches them via the Printful API and adapts them into
+//  the shape /store + /store/[slug] expects.
 //
-//  2. Add an entry to the PRODUCTS array below. Most fields are
-//     self-explanatory. The slug must be URL-safe (lowercase, dashes).
+//  TO ADD A NEW PRODUCT
+//  1. Design it in Printful's interface (mockups, files, retail price)
+//  2. Save it as a sync product
+//  3. Push the site (or wait up to 1h ISR) — it appears on /store
 //
-//  3. Set status to "published" when ready to sell.
-//     Use "coming_soon" while you're still designing.
-//     Use "sold_out" to keep it visible but disabled.
-//     Use "draft" to hide it entirely.
+//  TO TWEAK COPY OR HIDE A PRODUCT
+//  See the OVERRIDES map below. Keys are the auto-generated slug
+//  (lowercase, dashes). You can override description, badge, status,
+//  isExclusive, etc. without touching Printful.
 //
-//  4. Set buyUrl to a Stripe Payment Link (or Printful URL, etc.) when
-//     payments are wired. Leave undefined to show "Coming Soon".
-//
-//  5. Commit + push. Vercel rebuilds. Live within ~1 minute.
-//
-//  Same workflow as /events. No CMS needed for this scale.
+//  TO ENABLE SELLING
+//  Set buyUrl in OVERRIDES (or wait for the Stripe + Printful order
+//  webhook integration in Phase 2). Until then, all products show
+//  "Coming Soon" by default.
 // ──────────────────────────────────────────────────────────────────
+
+import { cache } from "react";
+import {
+  fetchSyncProducts,
+  fetchSyncProduct,
+  type PrintfulSyncVariant,
+} from "./printful";
 
 export type ProductCategory = "Sticker" | "Apparel" | "Headwear" | "Other";
 export type ProductStatus =
@@ -32,117 +40,172 @@ export type ProductStatus =
 
 export interface StoreProduct {
   slug: string;
+  printfulProductId: number;
   name: string;
   category: ProductCategory;
-  priceUSD: number; // e.g. 5 → "$5"
-  shortDescription?: string; // 1 line for cards
-  description: string; // longer copy for detail page
-  /** Image paths under /public, first is primary. */
+  priceUSD: number;
+  shortDescription?: string;
+  description: string;
+  /** First entry is the primary image. */
   images: string[];
-  /** Stripe Payment Link, Printful URL, etc. — leave empty until live. */
   buyUrl?: string;
   status: ProductStatus;
-  /** Optional pill, e.g. "New", "Limited", "Drop 1". */
   badge?: string;
-  /** True = visible only to active members of The Twelve. */
   isExclusive?: boolean;
 }
 
-// ─── Catalog ───────────────────────────────────────────────────────
+// ─── Per-product overrides ────────────────────────────────────────
+// Add entries here to customize how Printful products render on the
+// site. Keys are slugs (auto-generated from product name).
+//
+// Example:
+//   "cycling-hawaii-trucker-hat": {
+//     shortDescription: "Custom one-liner",
+//     badge: "New",
+//     isExclusive: false,
+//     status: "published",
+//     buyUrl: "https://buy.stripe.com/...",
+//   },
+const OVERRIDES: Record<string, Partial<StoreProduct>> = {};
 
-export const PRODUCTS: StoreProduct[] = [
-  // ── Stickers ────────────────────────────────────────────────
-  {
-    slug: "cycling-hawaii-logo-sticker",
-    name: "Cycling Hawaiʻi Logo Sticker",
-    category: "Sticker",
-    priceUSD: 5,
-    shortDescription:
-      "The orange scarab. Vinyl die-cut, weather-proof, goes anywhere.",
-    description:
-      "The Cycling Hawaiʻi logo in orange scarab form. 3-inch vinyl die-cut sticker, weather-proof. Goes on bike frames, water bottles, helmets, laptops, anywhere worth marking.",
-    images: ["/store/cycling-hawaii-logo-sticker/main.jpg"],
-    status: "coming_soon",
-  },
-  {
-    slug: "cyclinghawaii-com-sticker",
-    name: "cyclinghawaii.com Sticker",
-    category: "Sticker",
-    priceUSD: 5,
-    shortDescription: "Just the URL. Type-only. Subtle. Earned.",
-    description:
-      "Just the URL: cyclinghawaii.com. Type-only sticker for understated representation. Vinyl, 3-inch wide, weather-proof.",
-    images: ["/store/cyclinghawaii-com-sticker/main.jpg"],
-    status: "coming_soon",
-  },
-  {
-    slug: "at-cyclinghawaii-sticker",
-    name: "@cyclinghawaii Sticker",
-    category: "Sticker",
-    priceUSD: 5,
-    shortDescription: "The handle. Black sticker, orange wordmark.",
-    description:
-      "@cyclinghawaii — for the IG-coded among us. Black vinyl sticker, orange wordmark. 3-inch wide. Weather-proof, frame-safe.",
-    images: ["/store/at-cyclinghawaii-sticker/main.jpg"],
-    status: "coming_soon",
-  },
+// ─── Helpers ──────────────────────────────────────────────────────
 
-  // ── Apparel ────────────────────────────────────────────────
-  {
-    slug: "just-ride-tee",
-    name: "Just Ride Tee",
-    category: "Apparel",
-    priceUSD: 32,
-    shortDescription: 'Soft tri-blend. "Just Ride." across the back.',
-    description:
-      'Soft tri-blend tee. Cycling Hawaiʻi pocket-print on the front, "Just Ride." wordmark across the back shoulders. Available in heather gray.',
-    images: ["/store/just-ride-tee/main.jpg"],
-    status: "coming_soon",
-  },
-
-  // ── Headwear ───────────────────────────────────────────────
-  {
-    slug: "cycling-hawaii-trucker-hat",
-    name: "Cycling Hawaiʻi Trucker Hat",
-    category: "Headwear",
-    priceUSD: 30,
-    shortDescription:
-      "Classic 5-panel. Embroidered wordmark. Mesh back. Trade-wind ready.",
-    description:
-      "Classic 5-panel trucker hat. Cycling Hawaiʻi wordmark embroidered on the front in strava-orange. Structured front panel, mesh back, snapback adjustable.",
-    images: ["/store/cycling-hawaii-trucker-hat/main.jpg"],
-    status: "coming_soon",
-  },
-  {
-    slug: "cycling-hawaii-beanie",
-    name: "Cycling Hawaiʻi Beanie",
-    category: "Headwear",
-    priceUSD: 25,
-    shortDescription:
-      "Knit beanie. Embroidered logo. For upcountry rides and cool mornings.",
-    description:
-      "Knit beanie for upcountry rides and chilly mornings. Cycling Hawaiʻi logo embroidered on the cuff. One size fits most.",
-    images: ["/store/cycling-hawaii-beanie/main.jpg"],
-    status: "coming_soon",
-  },
-];
-
-// ─── Helpers ───────────────────────────────────────────────────────
-
-export function getProduct(slug: string): StoreProduct | undefined {
-  return PRODUCTS.find((p) => p.slug === slug);
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-export function getPublishedProducts(): StoreProduct[] {
-  // "draft" is hidden; everything else (published / coming_soon /
-  // sold_out) is visible on the page in its own state.
-  return PRODUCTS.filter((p) => p.status !== "draft");
+function categorizeProduct(name: string): ProductCategory {
+  const n = name.toLowerCase();
+  if (/sticker|decal/.test(n)) return "Sticker";
+  if (/hat|cap|beanie|trucker|snapback|bucket/.test(n)) return "Headwear";
+  if (/shirt|tee|t-?shirt|hoodie|sweatshirt|tank|jersey|polo/.test(n))
+    return "Apparel";
+  return "Other";
 }
 
-export function getProductsByCategory(
+function pickImagesFromVariants(
+  variants: PrintfulSyncVariant[],
+  fallbackThumbnail: string
+): string[] {
+  const images: string[] = [];
+  // Prefer mockup preview URLs from variant files (these are the
+  // generated mockups Printful renders with the design applied).
+  for (const v of variants) {
+    for (const f of v.files ?? []) {
+      const candidate = f.preview_url ?? f.thumbnail_url;
+      if (candidate && !images.includes(candidate)) {
+        images.push(candidate);
+      }
+    }
+    // Variant-level product image as a secondary source.
+    if (v.product?.image && !images.includes(v.product.image)) {
+      images.push(v.product.image);
+    }
+  }
+  if (images.length === 0 && fallbackThumbnail) {
+    images.push(fallbackThumbnail);
+  }
+  return images;
+}
+
+function defaultShortDescription(category: ProductCategory): string {
+  switch (category) {
+    case "Sticker":
+      return "Vinyl die-cut. Weather-proof. Goes anywhere.";
+    case "Apparel":
+      return "Soft, well-cut, made to ride in.";
+    case "Headwear":
+      return "Embroidered. Trade-wind ready.";
+    default:
+      return "Cycling Hawaiʻi.";
+  }
+}
+
+function defaultDescription(name: string): string {
+  return `${name}. Designed by Cycling Hawaiʻi, printed on demand by Printful, shipped worldwide.`;
+}
+
+// ─── Public API ───────────────────────────────────────────────────
+
+export const getProducts = cache(async (): Promise<StoreProduct[]> => {
+  const summaries = await fetchSyncProducts();
+  if (summaries.length === 0) return [];
+
+  // Fetch each product's variants in parallel for prices + images
+  const detailed = await Promise.all(
+    summaries.map(async (sp) => {
+      const detail = await fetchSyncProduct(sp.id);
+      return detail
+        ? { summary: sp, variants: detail.variants }
+        : { summary: sp, variants: [] };
+    })
+  );
+
+  const products: StoreProduct[] = [];
+  for (const d of detailed) {
+    const { summary: sp, variants } = d;
+    const slug = slugify(sp.name);
+    const category = categorizeProduct(sp.name);
+    const priceStr = variants[0]?.retail_price ?? "0";
+    const priceUSD = parseFloat(priceStr) || 0;
+    const images = pickImagesFromVariants(variants, sp.thumbnail_url);
+
+    const base: StoreProduct = {
+      slug,
+      printfulProductId: sp.id,
+      name: sp.name,
+      category,
+      priceUSD,
+      shortDescription: defaultShortDescription(category),
+      description: defaultDescription(sp.name),
+      images,
+      // Default to coming_soon until Stripe payment wiring is in.
+      status: "coming_soon",
+      isExclusive: false,
+    };
+
+    products.push({ ...base, ...OVERRIDES[slug] });
+  }
+
+  // Order: Stickers, Apparel, Headwear, Other
+  const order: ProductCategory[] = [
+    "Sticker",
+    "Apparel",
+    "Headwear",
+    "Other",
+  ];
+  products.sort((a, b) => {
+    const ai = order.indexOf(a.category);
+    const bi = order.indexOf(b.category);
+    if (ai !== bi) return ai - bi;
+    return a.name.localeCompare(b.name);
+  });
+
+  return products;
+});
+
+export async function getProduct(
+  slug: string
+): Promise<StoreProduct | undefined> {
+  const all = await getProducts();
+  return all.find((p) => p.slug === slug);
+}
+
+export async function getPublishedProducts(): Promise<StoreProduct[]> {
+  const all = await getProducts();
+  return all.filter((p) => p.status !== "draft");
+}
+
+export async function getProductsByCategory(
   category: ProductCategory
-): StoreProduct[] {
-  return getPublishedProducts().filter((p) => p.category === category);
+): Promise<StoreProduct[]> {
+  const all = await getPublishedProducts();
+  return all.filter((p) => p.category === category);
 }
 
 const CATEGORY_ORDER: ProductCategory[] = [
@@ -159,15 +222,14 @@ const CATEGORY_LABEL: Record<ProductCategory, string> = {
   Other: "Other",
 };
 
-export function getGroupedProducts(): {
-  category: ProductCategory;
-  label: string;
-  products: StoreProduct[];
-}[] {
+export async function getGroupedProducts(): Promise<
+  { category: ProductCategory; label: string; products: StoreProduct[] }[]
+> {
+  const published = await getPublishedProducts();
   return CATEGORY_ORDER.map((category) => ({
     category,
     label: CATEGORY_LABEL[category],
-    products: getProductsByCategory(category),
+    products: published.filter((p) => p.category === category),
   })).filter((group) => group.products.length > 0);
 }
 

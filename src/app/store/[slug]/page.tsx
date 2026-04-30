@@ -8,7 +8,6 @@ import {
   getProductsByCategory,
   formatPrice,
   statusLabel,
-  PRODUCTS,
   type StoreProduct,
 } from "@/lib/products";
 
@@ -17,14 +16,13 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  return PRODUCTS.filter((p) => p.status !== "draft").map((p) => ({
-    slug: p.slug,
-  }));
+  const all = await getPublishedProducts();
+  return all.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getProduct(slug);
   if (!product) return { title: "Not found — Cycling Hawaii" };
   return {
     title: `${product.name} — Cycling Hawaii`,
@@ -42,10 +40,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getProduct(slug);
   if (!product || product.status === "draft") notFound();
 
-  const related = getProductsByCategory(product.category)
+  const relatedAll = await getProductsByCategory(product.category);
+  const related = relatedAll
     .filter((p) => p.slug !== product.slug)
     .slice(0, 3);
 
@@ -77,6 +76,7 @@ function Hero({ product }: { product: StoreProduct }) {
                 priority
                 sizes="(min-width: 768px) 50vw, 100vw"
                 className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-10">
@@ -101,6 +101,7 @@ function Hero({ product }: { product: StoreProduct }) {
                     fill
                     sizes="80px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
               ))}
@@ -188,7 +189,6 @@ function Hero({ product }: { product: StoreProduct }) {
 
 // ──────────────── Related Products ──────────────
 function Related({ products }: { products: StoreProduct[] }) {
-  void getPublishedProducts; // imported above for symmetry, not used here
   return (
     <section className="py-12 px-6 bg-surface border-t border-border">
       <div className="max-w-[1100px] mx-auto">
@@ -222,6 +222,7 @@ function RelatedCard({ product }: { product: StoreProduct }) {
             fill
             sizes="(min-width: 768px) 320px, 100vw"
             className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-4">
