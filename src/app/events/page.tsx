@@ -11,6 +11,51 @@ import {
   type CyclingEvent,
 } from "@/lib/events";
 
+// ─── Countdown — tier-aware urgency badge ────────────────────────
+function CountdownBadge({
+  days,
+  size = "sm",
+}: {
+  days: number;
+  size?: "sm" | "lg";
+}) {
+  if (days < 0) return null;
+
+  const text =
+    days === 0
+      ? "Today"
+      : days === 1
+      ? "Tomorrow"
+      : `In ${days} day${days === 1 ? "" : "s"}`;
+
+  let cls = "";
+  if (days === 0) {
+    cls =
+      "bg-strava text-white animate-pulse shadow-md shadow-strava/30";
+  } else if (days <= 7) {
+    cls = "bg-strava text-white shadow-sm shadow-strava/20";
+  } else if (days <= 30) {
+    cls = "bg-strava/15 text-strava";
+  } else if (days <= 90) {
+    cls = "bg-strava/8 text-strava";
+  } else {
+    cls = "bg-mist/10 text-mist";
+  }
+
+  const sizeCls =
+    size === "lg"
+      ? "text-xs md:text-sm px-3 py-1.5"
+      : "text-[0.6rem] px-2 py-0.5";
+
+  return (
+    <span
+      className={`font-bold uppercase tracking-wider rounded-full inline-block ${cls} ${sizeCls}`}
+    >
+      {text.toUpperCase()}
+    </span>
+  );
+}
+
 export const metadata: Metadata = {
   title: "Events — Cycling Hawaii",
   description:
@@ -89,8 +134,10 @@ function FeaturedEventCard({ event }: { event: CyclingEvent }) {
                   className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-mist">
-                  No cover photo
+                <div className="w-full h-full bg-gradient-to-br from-strava/20 via-brand/15 to-mist/10 flex items-center justify-center p-8">
+                  <div className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold text-text/55 text-center leading-tight">
+                    {event.title}
+                  </div>
                 </div>
               )}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2">
@@ -109,17 +156,11 @@ function FeaturedEventCard({ event }: { event: CyclingEvent }) {
 
             {/* Body */}
             <div className="p-6 md:p-8 flex flex-col">
-              <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-2">
-                {event.island} · {formatEventDate(event.date, event.endDate)}
-                {days >= 0 && days <= 365 && (
-                  <span className="text-strava font-bold ml-2">
-                    {days === 0
-                      ? "today"
-                      : days === 1
-                      ? "tomorrow"
-                      : `in ${days} days`}
-                  </span>
-                )}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-[0.65rem] uppercase tracking-widest text-mist">
+                  {event.island} · {formatEventDate(event.date, event.endDate)}
+                </span>
+                <CountdownBadge days={days} size="lg" />
               </div>
               <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3 leading-tight">
                 {event.title}
@@ -220,8 +261,10 @@ function EventCard({ event }: { event: CyclingEvent }) {
             className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-mist text-xs uppercase tracking-widest">
-            {event.title}
+          <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-6">
+            <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-text/50 text-center leading-tight">
+              {event.title}
+            </div>
           </div>
         )}
         <div className="absolute top-3 left-3">
@@ -244,10 +287,8 @@ function EventCard({ event }: { event: CyclingEvent }) {
             {event.shortDescription}
           </p>
         )}
-        <div className="mt-auto pt-3 border-t border-border flex items-center justify-between">
-          <span className="text-[0.65rem] text-mist uppercase tracking-widest">
-            {days >= 0 ? (days === 0 ? "today" : `in ${days}d`) : "View"}
-          </span>
+        <div className="mt-auto pt-3 border-t border-border flex items-center justify-between gap-2">
+          <CountdownBadge days={days} size="sm" />
           <span className="text-strava group-hover:translate-x-1 transition-transform">
             <svg
               width="14"

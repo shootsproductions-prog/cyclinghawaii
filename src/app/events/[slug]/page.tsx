@@ -93,15 +93,27 @@ function Hero({ event }: { event: CyclingEvent }) {
               </span>
             )}
           </div>
-          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-white/85 mb-3">
-            {event.island} · {formatEventDate(event.date, event.endDate)}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-white/85">
+              {event.island} · {formatEventDate(event.date, event.endDate)}
+            </span>
             {days >= 0 && (
-              <span className="text-strava ml-2">
+              <span
+                className={`text-[0.7rem] md:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                  days === 0
+                    ? "bg-strava text-white animate-pulse"
+                    : days <= 7
+                    ? "bg-strava text-white"
+                    : days <= 30
+                    ? "bg-white/90 text-strava"
+                    : "bg-white/15 text-white/90 backdrop-blur-sm"
+                }`}
+              >
                 {days === 0
-                  ? "· today"
+                  ? "Today"
                   : days === 1
-                  ? "· tomorrow"
-                  : `· in ${days} days`}
+                  ? "Tomorrow"
+                  : `In ${days} days`}
               </span>
             )}
           </div>
