@@ -56,25 +56,29 @@ export default async function ClubPage() {
     }
   }
 
+  // Conditions is no longer rendered on /club — kept as a possible
+  // widget for elsewhere if we ever want it back.
+  void conditions;
+
   return (
     <main>
       <Hero />
 
       {roster.length > 0 && club && (
-        <InnerCircle members={roster} activities={club.activities} />
+        <Roster members={roster} activities={club.activities} />
+      )}
+
+      {roster.length > 0 && club && (
+        <InnerCircle
+          members={roster}
+          activities={club.activities}
+          stats={club.stats}
+        />
       )}
 
       {wall.length > 0 && (
         <Wall activities={wall.slice(0, 3)} avatarMap={avatarMap} />
       )}
-
-      {roster.length > 0 && club && (
-        <Roster members={roster} activities={club.activities} />
-      )}
-
-      {conditions && <Conditions conditions={conditions} />}
-
-      {club && <Compass club={club} />}
 
       <Call />
 
@@ -140,9 +144,11 @@ function Hero() {
 function InnerCircle({
   members,
   activities,
+  stats,
 }: {
   members: ClubMember[];
   activities: ClubActivity[];
+  stats: ClubData["stats"];
 }) {
   // Tally miles per member from the recent activities feed.
   const milesPerMember = new Map<string, number>();
@@ -309,9 +315,59 @@ function InnerCircle({
           })}
         </div>
 
-        <p className="text-center text-mist text-xs italic mt-8">
+        <p className="text-center text-mist text-xs italic mt-8 mb-12">
           Hover any rider to see their recent miles. The leader gets a glow.
         </p>
+
+        {/* Collective totals — absorbed from the old Compass section */}
+        <div className="border-t border-border pt-12 max-w-[760px] mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-[0.65rem] font-semibold tracking-[0.3em] uppercase text-mist">
+              Recently, Together
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
+                Miles together
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-strava">
+                {stats.totalMiles.toLocaleString()}
+              </div>
+              <div className="text-mist text-xs italic mt-2">
+                {milesCompare(stats.totalMiles)}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
+                Feet climbed
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
+                {stats.totalElevationFt.toLocaleString()}
+              </div>
+              <div className="text-mist text-xs italic mt-2">
+                {elevationCompare(stats.totalElevationFt)}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
+                Rides logged
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
+                {stats.totalRides}
+              </div>
+              {stats.topMember && (
+                <div className="text-mist text-xs italic mt-2">
+                  Most miles recently:{" "}
+                  <strong className="text-text">{stats.topMember}</strong>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
