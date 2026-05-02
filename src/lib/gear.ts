@@ -4,8 +4,7 @@
 //
 //  Editorial-only gear recommendations. Direct links to brand sites,
 //  no commission, no affiliates. The trust layer that monetization
-//  layers on top of (someday — see strategy doc in Notion / chat
-//  history).
+//  layers on top of (someday).
 //
 //  HOW TO ADD OR EDIT GEAR
 //
@@ -51,7 +50,7 @@ export interface GearItem {
   status: GearStatus;
   /** For "Don't Ride" items only. */
   warning?: string;
-  /** TBD = Vini hasn't picked the specific product yet. */
+  /** TBD = Vini hasn't picked the specific product/model yet. */
   pickTBD?: boolean;
 }
 
@@ -76,17 +75,20 @@ export const GEAR: GearItem[] = [
 
   // ── THE KIT ─────────────────────────────────────────────
   {
-    slug: "bibs",
-    name: "Bibs",
+    slug: "neopro-bibs",
+    name: "NeoPro Bibs & Jerseys",
+    brand: "NeoPro Cycling",
     category: "Kit",
-    tagline: "Cheap bibs are a tax you pay every ride.",
+    tagline: "Custom kit, direct-to-rider. The chamois that disappears.",
     review:
-      "The single most important piece of cycling kit. A good pair makes 6 hours feel like 3. A cheap pair makes 30 miles feel like a punishment. Skimp on socks. Skimp on jerseys. Do not skimp on bibs. The chamois has a job, and you'll know within 2 hours whether it's doing it.",
+      "NeoPro is the custom-kit company that gets it. Direct-to-consumer pricing, real chamois engineering, designs that don't look like a 1990s sticker bomb. Vini's been wearing their bibs and jerseys long enough to know — when a chamois disappears, you stop talking about it. That's the highest compliment.",
     hawaiiAngle:
-      "Hawaii's heat tests bibs harder than any temperate climate. Look for breathable mesh uppers and quick-dry chamois.",
+      "Hawaiʻi heat exposes weak fabrics fast. NeoPro's mesh uppers and quick-dry materials handle the salt, sun, and 4-hour climbs without surrendering structure.",
     priceTier: 3,
+    url: "https://neoprocycling.com/",
+    image: "/gear/neopro-bibs.jpg",
     status: "published",
-    pickTBD: true,
+    pickTBD: true, // specific model TBD — Vini to fill in
   },
   {
     slug: "helmet",
@@ -100,39 +102,67 @@ export const GEAR: GearItem[] = [
     pickTBD: true,
   },
   {
-    slug: "sunglasses",
-    name: "Sunglasses",
+    slug: "shimano-sunglasses",
+    name: "Shimano Sunglasses",
+    brand: "Shimano",
     category: "Kit",
-    tagline: "Cycling glasses. Not sunglasses.",
+    tagline: "Cycling glasses from a company that knows cycling.",
     review:
-      "The difference matters at 35mph descending. Cycling-specific glasses wrap, sit close to the face, and don't pop off when you sweat through them. Photochromic lenses are worth the upcharge for variable Hawaii light — bright on the climb, shaded under the canopy on the way down.",
+      "Shimano's been making cycling components since 1921 and sunglasses since they figured out riders need both eye protection AND clear vision at 35mph downhill. The frames wrap properly, sit close to the face, and don't pop off when you sweat. Photochromic lenses earn their upcharge in Hawaiʻi.",
+    hawaiiAngle:
+      "The light here changes a dozen times in one ride — bright on the climb, shaded under the canopy, blinding at the coast. Photochromic lenses adjust without you thinking about it.",
     priceTier: 3,
+    url: "https://bike.shimano.com/",
+    image: "/gear/shimano-sunglasses.jpg",
     status: "published",
     pickTBD: true,
   },
   {
-    slug: "cycling-shoes",
-    name: "Shoes",
+    slug: "fizik-shoes",
+    name: "Fizik Shoes",
+    brand: "Fizik",
     category: "Kit",
-    tagline: "Walk to coffee in them. Or don't bother.",
+    tagline: "Italian craft. Walks to the coffee stop without ego.",
     review:
-      "If your cycling shoes can't survive a 20-foot walk into Grandma's, they're not the right shoes. Stiff sole for power, but enough flex in the cleat position that you're not skating across cafe tile. SPD or 3-bolt road — pick your religion, don't switch.",
-    priceTier: 3,
+      "Fizik makes shoes the way Italians make shoes — like they know the shape of a foot. Stiff sole for power, micro-adjust BOA dial that holds through the ride, walkable enough that you don't skate across Grandma's tile. They look like cycling shoes, not spaceship shoes. That matters at the coffee stop.",
+    priceTier: 4,
+    url: "https://www.fizik.com/",
+    image: "/gear/fizik-shoes.jpg",
+    status: "published",
+    pickTBD: true,
+  },
+  {
+    slug: "dakine-gloves",
+    name: "Dakine Gloves",
+    brand: "Dakine",
+    category: "Kit",
+    tagline: "Maui-born. Made by people who ride here.",
+    review:
+      "Dakine started in Hāʻikū, Maui in 1979 making windsurfing gear. Forty-plus years later, they're still based on this island, still making cycling/MTB gloves, still understanding that gear designed for Hawaiʻi conditions is fundamentally different from gear designed for Bend, Oregon. Supporting local matters when local actually rides.",
+    hawaiiAngle:
+      "Made on Maui. By Mauians. The wear-test is the actual island, not a wind tunnel in Colorado.",
+    priceTier: 2,
+    url: "https://www.dakine.com/collections/cycling",
+    image: "/gear/dakine-gloves.jpg",
     status: "published",
     pickTBD: true,
   },
 
   // ── THE TECH ────────────────────────────────────────────
   {
-    slug: "bike-computer",
-    name: "Bike Computer",
+    slug: "gps-setup",
+    name: "The GPS Setup",
+    brand: "Apple Watch Ultra · iPhone 14 Pro · Quad Lock · Cadence",
     category: "Tech",
-    tagline: "GPS. Not your phone.",
+    tagline: "Watch on the wrist. Phone on the bars. Cadence runs the show.",
     review:
-      "Your phone is for emergencies, not navigation. A real computer doesn't die in 3 hours, doesn't catch every text mid-descent, and shows you exactly the data you need without the data you don't. Wahoo or Garmin — both work, the loyalty wars are silly.",
-    priceTier: 3,
+      "Cycling traditionalists hate phones on bars. Vini does it anyway and won't apologize. Apple Watch Ultra handles GPS, heart rate, multi-day battery, and the brutal Hawaiʻi sun without flinching. iPhone 14 Pro mounted via Quad Lock gives a full-screen dashboard, real navigation, music, and Strava live segments. The Cadence app (Elite tier) is the secret sauce — fully customizable screens, every metric you actually want, none you don't. Article incoming on the screen builds.",
+    hawaiiAngle:
+      "Apple Watch Ultra's water resistance and titanium case were built for exactly this — sweat, salt, sun, ocean spray on the descent into Lahaina. The Ultra's screen stays readable in direct Pacific sun, which Garmins struggle with.",
+    priceTier: 4,
+    url: "https://cadence.shop/",
+    image: "/gear/gps-setup.jpg",
     status: "published",
-    pickTBD: true,
   },
   {
     slug: "lights",
@@ -140,8 +170,40 @@ export const GEAR: GearItem[] = [
     category: "Tech",
     tagline: "Day and night, front and back. Always.",
     review:
-      "Drivers can't help you if they can't see you. Daytime running lights with a flashing pattern are non-negotiable on Hawaii's narrow shoulders. Bontrager Flare RT is the standard for a reason — visible from 1.2 miles in daylight, USB rechargeable, lasts forever.",
+      "Drivers can't help you if they can't see you. Daytime running lights with a flashing pattern are non-negotiable on Hawaiʻi's narrow shoulders. Bontrager Flare RT is the standard for a reason — visible from 1.2 miles in daylight, USB rechargeable, lasts forever.",
     priceTier: 2,
+    status: "published",
+    pickTBD: true,
+  },
+  {
+    slug: "nothing-open-ears",
+    name: "Nothing Open Ears",
+    brand: "Nothing",
+    model: "Ear (open)",
+    category: "Tech",
+    tagline: "Open-ear means you still hear the truck behind you.",
+    review:
+      "Riding with closed earbuds on Maui's narrow shoulders is a way to get killed. Open-ear / bone-conduction-style headphones let music or podcasts ride along without sealing you off from traffic, wind warnings, or the friend riding alongside you. Nothing's design is honest about being headphones for situational-awareness people.",
+    hawaiiAngle:
+      "Hawaiʻi roads have minimal shoulders and aggressive vehicle traffic. Hearing what's behind you isn't optional. Open-ear is the only ethical headphone for cycling here.",
+    priceTier: 2,
+    url: "https://nothing.tech/",
+    image: "/gear/nothing-open-ears.jpg",
+    status: "published",
+  },
+  {
+    slug: "rhynowalk-bags",
+    name: "Rhynowalk Bags",
+    brand: "Rhynowalk",
+    category: "Tech",
+    tagline: "The carry system for long days on the bike.",
+    review:
+      "Frame bags, top tube bags, saddle bags — Rhynowalk does utility cycling storage well at a price that doesn't require selling a kidney. Waterproof construction, smart compartments, mounting that holds through chunky descents. Not as boutique as Apidura or Restrap, but most riders won't notice the difference and most wallets will.",
+    hawaiiAngle:
+      "Maui rides easily stretch to 6+ hours. Real food, sunscreen reapplications, a tube and CO₂, a rain jacket for the surprise upcountry shower — all need a place to live that isn't your jersey pockets.",
+    priceTier: 2,
+    url: "https://www.rhinowalk.com/",
+    image: "/gear/rhynowalk-bags.jpg",
     status: "published",
     pickTBD: true,
   },
@@ -164,7 +226,7 @@ export const GEAR: GearItem[] = [
     category: "Hawaii",
     tagline: "Reef-safe. No exceptions.",
     review:
-      "Hawaii law bans oxybenzone and octinoxate, and the rest of us have an obvious responsibility too. For cyclists, mineral sunscreen (zinc oxide) is the play — sweats less into the eyes, doesn't sting, doesn't pollute the bay you'll swim in tomorrow. Reapply at every coffee stop. Set a timer.",
+      "Hawaiʻi law bans oxybenzone and octinoxate, and the rest of us have an obvious responsibility too. For cyclists, mineral sunscreen (zinc oxide) is the play — sweats less into the eyes, doesn't sting, doesn't pollute the bay you'll swim in tomorrow. Reapply at every coffee stop. Set a timer.",
     hawaiiAngle:
       "Pacific sun at altitude is brutal. Haleakalā summit gets you 30% closer to the sun in real terms. Cover ears, neck, back of hands.",
     priceTier: 1,
@@ -188,7 +250,7 @@ export const GEAR: GearItem[] = [
     category: "Hawaii",
     tagline: "Under the helmet. Sweat off the brow. Sun off the ears.",
     review:
-      "An old-school cotton cycling cap under the helmet does more in Hawaii than it does anywhere else. Soaks the sweat that would otherwise blind you on a descent. Keeps the harshest sun off the back of the neck. $15. Looks good. Worth it.",
+      "An old-school cotton cycling cap under the helmet does more in Hawaiʻi than it does anywhere else. Soaks the sweat that would otherwise blind you on a descent. Keeps the harshest sun off the back of the neck. $15. Looks good. Worth it.",
     priceTier: 1,
     status: "published",
     pickTBD: true,
@@ -216,10 +278,11 @@ const CATEGORY_LABEL: Record<GearCategory, string> = {
 const CATEGORY_BLURB: Record<GearCategory, string> = {
   Bike: "The frame everything else hangs on. Pick well, ride forever.",
   Kit: "Soft goods. Cheap pieces become punishments. The right pieces disappear.",
-  Tech: "Lights, computers, hydration. The stuff that keeps you safe and oriented.",
+  Tech: "GPS, lights, headphones, bags. The stuff that keeps you safe, oriented, and carrying everything you need.",
   Hawaii:
-    "Built for the climate, the sun, the reef. The things you won't find on a Bay Area gear list.",
-  "Don't Ride": "The integrity flex. Honest opinions on what doesn't deserve your money.",
+    "Built for the climate, the sun, the reef. Things you won't find on a Bay Area gear list.",
+  "Don't Ride":
+    "The integrity flex. Honest opinions on what doesn't deserve your money.",
 };
 
 export function getPublishedGear(): GearItem[] {
