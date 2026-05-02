@@ -2,6 +2,7 @@ import Image from "next/image";
 
 const FOOTER_LINKS = [
   { href: "/events", label: "Events", external: false },
+  { href: "/gear", label: "Gear", external: false },
   { href: "/store", label: "Store", external: false },
   { href: "/live", label: "Live Tracker", external: false },
   { href: "/#scarab", label: "Scarab", external: false },
