@@ -16,13 +16,30 @@ import { generateAndSaveAudio } from "./voice";
 const LAURA_SIGNATURE =
   "— Laura Ryder · Vini's Assistant, Chief Reality Officer, and Professional BS Detector · cyclinghawaii.com";
 
+/**
+ * Strip a leading date marker from a Laura entry. Handles:
+ *   "May 3, 2026"            (plain)
+ *   "**May 3, 2026**"        (markdown bold)
+ *   "*May 3*"                (markdown italic)
+ *   "# May 3, 2026"          (markdown heading)
+ *   With or without trailing comma, year, newlines.
+ *
+ * Anthropic Haiku occasionally adds these despite the prompt saying not
+ * to. The site already shows the ride date elsewhere — this is just
+ * noise in the body.
+ */
+export function stripLeadingDate(body: string): string {
+  return body
+    .trim()
+    .replace(
+      /^[*#\s]*[A-Za-z]+\s+\d{1,2},?\s*\d{0,4}[*\s]*\n+/,
+      ""
+    )
+    .trim();
+}
+
 function buildStravaDescription(body: string): string {
-  let cleaned = body.trim();
-
-  // Strip date patterns from the beginning (e.g., "April 24, 2026", "Apr 24", "May 1")
-  // Matches: Month (full or short), Day, optional comma, optional year
-  cleaned = cleaned.replace(/^[A-Za-z]+\s+\d{1,2},?\s*\d{0,4}\n*/gm, '').trim();
-
+  const cleaned = stripLeadingDate(body);
   return `${cleaned}\n\n${LAURA_SIGNATURE}`;
 }
 
@@ -57,7 +74,14 @@ async function loadEntries(): Promise<BlogEntry[]> {
     const latest = blobs.blobs[0];
     const res = await fetch(latest.url);
     if (!res.ok) return [];
-    return res.json();
+    const raw: BlogEntry[] = await res.json();
+    // Clean any legacy entries that have a leading date marker. Keeps the
+    // stored copy as-is until the next regeneration; this just sanitizes
+    // what's served at read time.
+    return raw.map((entry) => ({
+      ...entry,
+      body: stripLeadingDate(entry.body),
+    }));
   } catch (error) {
     console.log("No existing blog entries found:", error);
     return [];
@@ -342,6 +366,7 @@ Rules:
 - Under 150 words
 - Don't start with the ride name
 - Don't start with "Laura here" — she's writing, not introducing
+- DO NOT begin with a date stamp like "May 3, 2026" or "**May 3, 2026**". The page already shows the date elsewhere — starting with the date is redundant and breaks the preview cards.
 - Be specific with numbers. Laura reads the data.
 - If PRs were set, acknowledge briefly — Laura is sparingly impressed.
 - If pacing was poor (positive split), use it. If HR drift is high, use it. Specifics > generalities.`;
@@ -352,8 +377,12 @@ Rules:
     messages: [{ role: "user", content: prompt }],
   });
 
-  const body =
+  const rawBody =
     response.content[0].type === "text" ? response.content[0].text : "";
+
+  // Sanitize any leading date marker before storing. Belt + suspenders
+  // alongside the prompt rule below — Haiku occasionally adds them.
+  const body = stripLeadingDate(rawBody);
 
   return {
     rideId: ride.id,
