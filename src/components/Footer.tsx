@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
   { href: "/store", label: "Store", external: false },
   { href: "/live", label: "Live Tracker", external: false },
   { href: "/#scarab", label: "Scarab", external: false },
+  { href: "/brand", label: "Brand", external: false },
   { href: "https://instagram.com/cyclinghawaii", label: "Instagram", external: true },
   { href: "/#youtube", label: "YouTube", external: false },
   { href: "/#spotify", label: "Spotify", external: false },
