@@ -20,7 +20,6 @@ export default function Welcome() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
 
       {/* Bottom fade so the page bleeds into the next section */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-bg to-transparent" />
 
       {/* Copy */}
       <div className="relative h-full flex items-center px-6 md:px-12 lg:px-20">

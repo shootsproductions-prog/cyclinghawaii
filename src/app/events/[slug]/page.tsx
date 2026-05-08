@@ -77,7 +77,6 @@ function Hero({ event }: { event: CyclingEvent }) {
         <div className="w-full h-full bg-gradient-to-br from-strava/30 to-brand/30" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-bg to-transparent" />
 
       <div className="relative h-full flex items-end pb-16 px-6 md:px-12 lg:px-20">
         <div className="max-w-[860px]">
