@@ -94,18 +94,26 @@ export const INITIATIVES: Initiative[] = [
     status: "blocked",
     category: "Platform",
     detail:
-      "Submitted Apr 28. Awaiting Strava review. Unlocks /roast OAuth for all club members.",
+      "Submitted Apr 28. Day 10 today. Strategy: keep building site so reviewers see a more polished case if/when they revisit. Follow-up email queued for May 19 if still silent.",
     blockedBy: "Strava developer review",
   },
 
   // ── ACTIVE ──
   {
     id: "drone-shoot",
-    title: "Drone shoot — Kahakuloa sunrise",
+    title: "Drone shoot — Davin · Kahakuloa coast",
     status: "active",
     category: "Content",
     detail:
-      "May 23, 2026. Footage for /club hero refresh, manifesto trailer, /gear product shots, IG reels.",
+      "May 24, 2026 (sunrise). Aerials of the ranch → Kahakuloa loop. Hero footage for manifesto trailer + IG reels.",
+  },
+  {
+    id: "photo-shoot",
+    title: "Photo shoot — Rodrigo · Polipoli (or Thompson Rd plan B)",
+    status: "active",
+    category: "Content",
+    detail:
+      "May 26, 2026. Portraits, lifestyle, gear stills. Sea-to-summit complement to drone day. Refreshes Welcome banner, Manifesto portrait, /scarab hero.",
   },
 
   // ── QUEUED ──
@@ -124,8 +132,17 @@ export const INITIATIVES: Initiative[] = [
     status: "queued",
     category: "Content",
     detail:
-      "Manifesto trailer or gear review. Drone B-roll + Laura voice from /admin/laura-voice.",
+      "Manifesto trailer with drone + photo b-roll from May 24/26. Laura voice from /admin/laura-voice.",
     estimateDays: 1,
+  },
+  {
+    id: "homepage-refresh",
+    title: "Homepage refresh with May 24/26 media",
+    status: "queued",
+    category: "Content",
+    detail:
+      "Welcome banner replacement, Featured Ride hero, /scarab refresh. Triggers after Rodrigo delivers.",
+    estimateDays: 0.5,
   },
   {
     id: "stripe-printful",
@@ -133,7 +150,7 @@ export const INITIATIVES: Initiative[] = [
     status: "queued",
     category: "Commerce",
     detail:
-      "Auto-fulfillment when a customer buys. Currently products are status: coming_soon.",
+      "Auto-fulfillment when a customer buys. Currently products are status: coming_soon. First sample ordered → flip to published.",
     estimateDays: 1,
   },
   {
@@ -153,15 +170,6 @@ export const INITIATIVES: Initiative[] = [
     detail:
       "Helmet, lights, hydration, sunscreen, anti-chafe, cycling cap — specific brands.",
     estimateDays: 0.5,
-  },
-  {
-    id: "strava-club-bio",
-    title: "Update Strava club description",
-    status: "queued",
-    category: "Community",
-    detail:
-      "Drafted copy lives in chat. Vini pastes manually into Strava admin UI when ready.",
-    estimateDays: 0.1,
   },
   {
     id: "tour-routes",
@@ -190,6 +198,15 @@ export const INITIATIVES: Initiative[] = [
       "Rotates through The Twelve, oldest first. Mondays. <30 word Laura roast + permalink.",
     estimateDays: 1,
   },
+  {
+    id: "brand-pdf-link",
+    title: "Add 'Download PDF' button to /brand",
+    status: "queued",
+    category: "Platform",
+    detail:
+      "Link to /brand/claude-design-use-cases.pdf so collaborators get the portable version. ~5 min build.",
+    estimateDays: 0.05,
+  },
 ];
 
 // ────────────────────────────────────────────────────────
@@ -197,18 +214,25 @@ export const INITIATIVES: Initiative[] = [
 // ────────────────────────────────────────────────────────
 export const MILESTONES: Milestone[] = [
   {
-    id: "strava-followup-window",
-    date: "2026-05-08",
-    title: "Strava follow-up window opens (day 10)",
+    id: "strava-followup",
+    date: "2026-05-19",
+    title: "Strava follow-up email (if still silent · day 21)",
     category: "Ops",
-    detail: "If still no response from Strava, send single short follow-up.",
+    detail: "Send polished follow-up to developers@strava.com if no response by then.",
   },
   {
     id: "drone-shoot",
-    date: "2026-05-23",
-    title: "Drone shoot — Kahakuloa sunrise",
+    date: "2026-05-24",
+    title: "Drone shoot — Davin · Kahakuloa coast",
     category: "Content",
-    detail: "Hero footage, manifesto trailer, gear shots.",
+    detail: "Sunrise aerials of ranch → Kahakuloa loop. Hero footage for manifesto trailer.",
+  },
+  {
+    id: "photo-shoot",
+    date: "2026-05-26",
+    title: "Photo shoot — Rodrigo · Polipoli (or Thompson Rd)",
+    category: "Content",
+    detail: "Portraits, lifestyle, gear. Sea-to-summit complement to drone day.",
   },
   {
     id: "ride-of-silence",
@@ -257,6 +281,44 @@ export const MILESTONES: Milestone[] = [
 //  RECENTLY SHIPPED — newest first
 // ────────────────────────────────────────────────────────
 export const SHIPPED: ShippedItem[] = [
+  {
+    id: "strava-club-bio",
+    title: "Strava club description updated to 2026 brand voice",
+    category: "Community",
+    date: "2026-05-08",
+  },
+  {
+    id: "claude-design-pdf",
+    title: "Claude Design Use Cases — branded PDF reference (10 pages)",
+    category: "Ops",
+    date: "2026-05-08",
+  },
+  {
+    id: "hero-gradient-removed",
+    title: "Hero photos — bottom gradient fade removed for cleaner cuts",
+    category: "Platform",
+    date: "2026-05-08",
+  },
+  {
+    id: "brand-page",
+    title: "/brand — public brand book, rendered live from the codebase",
+    category: "Platform",
+    date: "2026-05-07",
+    url: "/brand",
+  },
+  {
+    id: "logs-date-strip",
+    title: "Laura's Logs — strip leading date markers from blog entries",
+    category: "Content",
+    date: "2026-05-04",
+  },
+  {
+    id: "dashboard",
+    title: "/admin/dashboard — Mission Control for ops + planning",
+    category: "Ops",
+    date: "2026-05-04",
+    url: "/admin/dashboard",
+  },
   {
     id: "laura-voice-studio",
     title: "Laura's Voice Studio (admin tool)",
