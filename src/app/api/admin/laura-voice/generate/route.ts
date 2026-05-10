@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 
 const ELEVENLABS_API = "https://api.elevenlabs.io/v1";
 
-// Laura's voice ID — the new, polished one
-const LAURA_VOICE_ID = "aMSt68OGf4xUZAnLpTU8";
+// Laura's voice ID — updated May 9, 2026
+const LAURA_VOICE_ID = "uYXf8XasLslADfZ2MB4u";
 
 // Voice settings tuned for Laura's dry, sarcastic delivery
 const VOICE_SETTINGS = {

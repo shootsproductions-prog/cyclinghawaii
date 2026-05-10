@@ -264,7 +264,7 @@ export default function LauraVoicePage() {
           </button>
 
           <span className="ml-auto text-xs text-mist italic">
-            Voice ID: <code>aMSt68OGf4xUZAnLpTU8</code>
+            Voice ID: <code>uYXf8XasLslADfZ2MB4u</code>
           </span>
         </div>
 

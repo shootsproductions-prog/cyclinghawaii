@@ -63,26 +63,33 @@ function Hero({ event }: { event: CyclingEvent }) {
   const sport = eventTypeColor(event.type);
 
   return (
-    <section className="relative w-full h-[55vh] min-h-[420px] max-h-[640px] overflow-hidden">
-      {event.coverPhoto ? (
-        <Image
-          src={event.coverPhoto}
-          alt={event.title}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-strava/30 to-brand/30" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30" />
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        {/* Photo — flat, clean, soft shadow */}
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14 bg-surface">
+          {event.coverPhoto ? (
+            <Image
+              src={event.coverPhoto}
+              alt={event.title}
+              fill
+              priority
+              sizes="(min-width: 1280px) 1280px, 100vw"
+              className="object-cover object-center"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-10">
+              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold text-text/40 text-center">
+                {event.title}
+              </div>
+            </div>
+          )}
+        </div>
 
-      <div className="relative h-full flex items-end pb-16 px-6 md:px-12 lg:px-20">
+        {/* Editorial title block */}
         <div className="max-w-[860px]">
           <div className="flex flex-wrap gap-2 mb-4">
             <span
-              className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${sport.bg} ${sport.text} bg-white`}
+              className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${sport.bg} ${sport.text}`}
             >
               {event.type}
             </span>
@@ -92,8 +99,8 @@ function Hero({ event }: { event: CyclingEvent }) {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-white/85">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-mist">
               {event.island} · {formatEventDate(event.date, event.endDate)}
             </span>
             {days >= 0 && (
@@ -104,8 +111,8 @@ function Hero({ event }: { event: CyclingEvent }) {
                     : days <= 7
                     ? "bg-strava text-white"
                     : days <= 30
-                    ? "bg-white/90 text-strava"
-                    : "bg-white/15 text-white/90 backdrop-blur-sm"
+                    ? "bg-strava/15 text-strava"
+                    : "bg-mist/10 text-mist"
                 }`}
               >
                 {days === 0
@@ -116,11 +123,11 @@ function Hero({ event }: { event: CyclingEvent }) {
               </span>
             )}
           </div>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[0.95]">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95]">
             {event.title}
           </h1>
           {event.shortDescription && (
-            <p className="text-white/85 text-base md:text-lg max-w-[640px] mt-5 leading-relaxed">
+            <p className="text-mist text-base md:text-lg max-w-[640px] mt-5 leading-relaxed">
               {event.shortDescription}
             </p>
           )}
