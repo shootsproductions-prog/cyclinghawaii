@@ -39,19 +39,31 @@ export default async function StorePage() {
 // ───────────────────── Hero ─────────────────────
 function Hero({ hasProducts }: { hasProducts: boolean }) {
   return (
-    <section className="relative pt-32 pb-16 px-6 bg-gradient-to-b from-strava/10 via-bg to-bg overflow-hidden">
-      <div className="max-w-[860px] mx-auto text-center">
-        <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-          The Store
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
+          <Image
+            src="/bike/scarab-grid-1.jpg"
+            alt="Cycling Hawaiʻi goods"
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover object-center"
+          />
         </div>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
-          Cycling Hawaiʻi<span className="text-strava"> Goods</span>
-        </h1>
-        <p className="text-mist text-base md:text-lg max-w-[640px] mx-auto leading-relaxed">
-          {hasProducts
-            ? "Stickers. Hats. Shirts. Cycling Hawaiʻi on every kind of canvas."
-            : "Coming soon. Stickers, hats, shirts. Earned, not bought."}
-        </p>
+        <div className="max-w-[820px]">
+          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+            The Store
+          </div>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
+            Cycling Hawaiʻi<span className="text-strava"> Goods</span>
+          </h1>
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+            {hasProducts
+              ? "Stickers. Hats. Shirts. Cycling Hawaiʻi on every kind of canvas."
+              : "Coming soon. Stickers, hats, shirts. Earned, not bought."}
+          </p>
+        </div>
       </div>
     </section>
   );

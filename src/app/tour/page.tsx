@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { getTourStandings, type TourStandings, type JerseyHolder } from "@/lib/tour";
 import {
   TOUR_STAGES,
@@ -38,21 +39,31 @@ export default async function TourPage() {
 // ───────────────────── Hero ─────────────────────
 function Hero({ year, headline }: { year: number; headline: string }) {
   return (
-    <section className="relative pt-32 pb-16 px-6 bg-gradient-to-b from-strava/15 via-bg to-bg overflow-hidden">
-      <div className="max-w-[860px] mx-auto text-center">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-          The 2026 Edition
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
+          <Image
+            src="/bike/scarab-hero.jpg"
+            alt="Tour de Maui — the long road"
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover object-center"
+          />
         </div>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-text leading-[0.95] mb-6">
-          Tour de
-          <span className="text-strava"> Maui</span>
-        </h1>
-        <p className="text-mist text-base md:text-lg max-w-[680px] mx-auto leading-relaxed">
-          Twelve stages. One per month. Four jerseys. Laura keeps the books.
-          Tag <strong className="text-strava">#tdm-stage-N</strong> on Strava
-          to compete.
-        </p>
-        <div className="mt-8 max-w-[640px] mx-auto bg-card border border-border rounded-xl p-5 text-left">
+        <div className="max-w-[820px]">
+          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+            The {year} Edition
+          </div>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
+            Tour de<span className="text-strava"> Maui</span>
+          </h1>
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+            Twelve stages. One per month. Four jerseys. Laura keeps the books.
+            Tag <strong className="not-italic text-strava">#tdm-stage-N</strong> on Strava
+            to compete.
+          </p>
+          <div className="mt-8 max-w-[640px] bg-card border border-border rounded-xl p-5">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-strava/10 flex items-center justify-center shrink-0">
               <svg
@@ -75,6 +86,7 @@ function Hero({ year, headline }: { year: number; headline: string }) {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </section>

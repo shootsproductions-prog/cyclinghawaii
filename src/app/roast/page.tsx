@@ -37,26 +37,37 @@ export default async function RoastPage() {
 // ───────────────────── Hero ─────────────────────
 function Hero() {
   return (
-    <section className="relative w-full pt-32 pb-20 px-6 bg-gradient-to-b from-strava/10 via-bg to-bg overflow-hidden">
-      <div className="max-w-[860px] mx-auto text-center">
-        <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-          Invite Only
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
+          <Image
+            src="/club/vini.jpg"
+            alt="A rider, mid-ride, about to be roasted"
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover object-center"
+          />
         </div>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-text leading-[0.95] mb-6">
-          Get
-          <span className="text-strava"> Roasted.</span>
-        </h1>
-        <p className="text-mist text-lg md:text-xl max-w-[640px] mx-auto leading-relaxed">
-          Cycling Hawaiʻi&apos;s roast list. Connect your Strava, ride your
-          rides, and let Laura — our resident AI bookkeeper — write about it.
-          Lovingly. Often.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-8 text-mist text-sm">
-          <span>Free</span>
-          <span className="text-mist/40">·</span>
-          <span>Invite-only</span>
-          <span className="text-mist/40">·</span>
-          <span>Quit anytime</span>
+        <div className="max-w-[820px]">
+          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+            Invite Only
+          </div>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
+            Get<span className="text-strava"> Roasted.</span>
+          </h1>
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+            Cycling Hawaiʻi&apos;s roast list. Connect your Strava, ride your
+            rides, and let Laura — our resident AI bookkeeper — write about it.
+            Lovingly. Often.
+          </p>
+          <div className="flex flex-wrap items-center gap-3 mt-6 text-mist text-sm">
+            <span>Free</span>
+            <span className="text-mist/40">·</span>
+            <span>Invite-only</span>
+            <span className="text-mist/40">·</span>
+            <span>Quit anytime</span>
+          </div>
         </div>
       </div>
     </section>

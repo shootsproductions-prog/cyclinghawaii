@@ -86,19 +86,31 @@ export default function EventsPage() {
 // ───────────────────── Hero ─────────────────────
 function Hero({ hasUpcoming }: { hasUpcoming: boolean }) {
   return (
-    <section className="relative pt-32 pb-12 px-6 bg-gradient-to-b from-strava/10 via-bg to-bg">
-      <div className="max-w-[860px] mx-auto text-center">
-        <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-          The Calendar
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
+          <Image
+            src="/events/cycle-to-the-sun.jpg"
+            alt="Hawaiʻi cycling calendar — the road up Haleakalā"
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover object-center"
+          />
         </div>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
-          Hawaiʻi Cycling<span className="text-strava"> Events</span>
-        </h1>
-        <p className="text-mist text-base md:text-lg max-w-[640px] mx-auto leading-relaxed">
-          {hasUpcoming
-            ? "Pick a date. Plan the ride. Show up rested."
-            : "Calendar's quiet right now. New events drop here as we hear about them."}
-        </p>
+        <div className="max-w-[820px]">
+          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+            The Calendar
+          </div>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
+            Hawaiʻi Cycling<span className="text-strava"> Events</span>
+          </h1>
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+            {hasUpcoming
+              ? "Pick a date. Plan the ride. Show up rested."
+              : "Calendar's quiet right now. New events drop here as we hear about them."}
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -120,7 +132,7 @@ function FeaturedEventCard({ event }: { event: CyclingEvent }) {
 
         <Link
           href={`/events/${event.slug}`}
-          className="group block bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow no-underline"
+          className="group block bg-card border border-border rounded-2xl overflow-hidden shadow-[0_10px_30px_-14px_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_-18px_rgba(0,0,0,0.28)] transition-shadow no-underline"
         >
           <div className="grid md:grid-cols-[1.3fr_1fr]">
             {/* Cover image */}

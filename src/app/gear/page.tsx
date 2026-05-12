@@ -36,19 +36,31 @@ export default function GearPage() {
 // ───────────────────── Hero ─────────────────────
 function Hero() {
   return (
-    <section className="relative pt-32 pb-16 px-6 bg-gradient-to-b from-strava/10 via-bg to-bg overflow-hidden">
-      <div className="max-w-[860px] mx-auto text-center">
-        <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-          Curated by Laura
+    <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
+          <Image
+            src="/bike/cockpit.jpg"
+            alt="Cockpit close-up — gear in working position"
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover object-center"
+          />
         </div>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
-          What I<span className="text-strava"> Ride.</span>
-        </h1>
-        <p className="text-mist text-base md:text-lg max-w-[640px] mx-auto leading-relaxed">
-          Real opinions on real cycling gear. Curated for Hawaiʻi roads.
-          No affiliate links. No ads. Just things that work — and what to
-          avoid.
-        </p>
+        <div className="max-w-[820px]">
+          <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
+            Curated by Laura
+          </div>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
+            What I<span className="text-strava"> Ride.</span>
+          </h1>
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+            Real opinions on real cycling gear. Curated for Hawaiʻi roads.
+            No affiliate links. No ads. Just things that work — and what to
+            avoid.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -89,7 +101,7 @@ function CategorySection({
 // ─────────────────── Card ───────────────────────
 function GearCard({ item }: { item: GearItem }) {
   return (
-    <article className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col">
+    <article className="bg-card border border-border rounded-2xl overflow-hidden shadow-[0_10px_30px_-14px_rgba(0,0,0,0.18)] flex flex-col">
       {/* Image / placeholder */}
       <div className="relative aspect-[16/10] bg-surface overflow-hidden">
         {item.image ? (
