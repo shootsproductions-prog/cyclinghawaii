@@ -48,6 +48,12 @@ export interface CyclingEvent {
   shortDescription?: string;
   registrationUrl?: string;
   websiteUrl?: string;
+  /**
+   * BikeReg permalink slug — e.g. "cycle-to-the-sun", "demrr26", or
+   * "72105". When set, lib/bikereg.ts fetches live event data and
+   * merges date/status/location updates over the editorial defaults.
+   */
+  bikeregSlug?: string;
   /** Optional Strava route URL (we display a polyline preview) */
   routeUrl?: string;
   organizer?: string;
@@ -78,6 +84,7 @@ export const EVENTS: CyclingEvent[] = [
       "The legendary Cycle to the Sun is one of the most difficult bike climbs in the world. Riders start at sea level in Pāʻia and finish at the summit of Haleakalā — 10,023 feet of climbing over 36 miles, with gradients reaching 18%. The race is capped at 200 participants and contingent on National Park Service approval. A three-person relay option is available with changeover points at approximately 2,700 ft and 6,500 ft.\n\nEntry fees benefit the Pāʻia Youth Center. Online registration only via Bikereg.",
     registrationUrl: "https://www.bikereg.com/cycle-to-the-sun",
     websiteUrl: "https://cycletothesun.com/",
+    bikeregSlug: "cycle-to-the-sun",
     organizer: "Go Cycling Maui",
     cost: "$250 ($225 kamaʻāina) · Relay: $400 ($375 kamaʻāina)",
     coverPhoto: "/events/cycle-to-the-sun.jpg",
@@ -106,7 +113,8 @@ export const EVENTS: CyclingEvent[] = [
       "The pinnacle of Hawaiʻi bike racing. 112 miles around Oʻahu — the same distance that became the Iron Man bike leg.",
     description:
       "The Dick Evans Memorial Road Race is the longest-running and most prestigious road race in Hawaiʻi. The 112-mile course around Oʻahu is the basis for the Iron Man Triathlon's bike leg. It's a serious day on the bike — for racers, for sufferers, for anyone who wants to ride into the history of the sport here.",
-    registrationUrl: "https://www.bikereg.com/73691",
+    registrationUrl: "https://www.bikereg.com/demrr26",
+    bikeregSlug: "demrr26",
     organizer: "Hawaiʻi cycling community",
     cost: "See registration",
     coverPhoto: "/events/dick-evans.jpg",
@@ -260,8 +268,91 @@ export const EVENTS: CyclingEvent[] = [
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+import { fetchBikeRegEvents, type BikeRegEvent } from "./bikereg";
+
+/**
+ * CyclingEvent merged with the latest BikeReg snapshot. `bikereg` is
+ * present whenever the event has a `bikeregSlug` AND the fetch
+ * succeeded — UI can use it to show rescheduled/cancelled badges.
+ *
+ * Live BikeReg fields override the editorial defaults for: `date`,
+ * `endDate`, and (loosely) `location`. Editorial wins on everything
+ * else — Laura's takes, description, photos, costs, the long story.
+ */
+export interface LiveCyclingEvent extends CyclingEvent {
+  bikereg?: BikeRegEvent;
+}
+
+/**
+ * Server-only. Fetches all events with a `bikeregSlug` in parallel,
+ * merges live date/status data over the editorial defaults, and
+ * returns the augmented list in original order.
+ *
+ * Cached by Next.js fetch cache (24h via bikereg.ts), so calling this
+ * on every request is cheap once warm.
+ */
+export async function getLiveEvents(): Promise<LiveCyclingEvent[]> {
+  const slugs = EVENTS.map((e) => e.bikeregSlug).filter(
+    (s): s is string => Boolean(s)
+  );
+  const liveBySlug = slugs.length
+    ? await fetchBikeRegEvents(slugs)
+    : new Map<string, BikeRegEvent>();
+
+  return EVENTS.map((e) => {
+    const live = e.bikeregSlug ? liveBySlug.get(e.bikeregSlug) : undefined;
+    if (!live) return { ...e } as LiveCyclingEvent;
+    return {
+      ...e,
+      bikereg: live,
+      // Trust BikeReg dates if present — they're the source of truth
+      // for "when did the organizer actually schedule this." Falls
+      // back to editorial dates when BikeReg JSON-LD is incomplete.
+      date: live.startDate ?? e.date,
+      endDate: live.endDate ?? e.endDate,
+    };
+  });
+}
+
 export function getEvent(slug: string): CyclingEvent | undefined {
   return EVENTS.find((e) => e.slug === slug);
+}
+
+/**
+ * Server-only. Same as `getEvent` but augmented with BikeReg live data.
+ */
+export async function getLiveEvent(
+  slug: string
+): Promise<LiveCyclingEvent | undefined> {
+  const all = await getLiveEvents();
+  return all.find((e) => e.slug === slug);
+}
+
+/** Filter helpers that operate on a pre-loaded `LiveCyclingEvent[]`. */
+export function filterUpcoming<T extends CyclingEvent>(
+  events: T[],
+  today: Date = new Date()
+): T[] {
+  const todayISO = today.toISOString().slice(0, 10);
+  return events
+    .filter((e) => (e.endDate ?? e.date) >= todayISO)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function filterPast<T extends CyclingEvent>(
+  events: T[],
+  today: Date = new Date()
+): T[] {
+  const todayISO = today.toISOString().slice(0, 10);
+  return events
+    .filter((e) => (e.endDate ?? e.date) < todayISO)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export function pickFeatured<T extends CyclingEvent>(
+  upcoming: T[]
+): T | undefined {
+  return upcoming.find((e) => e.isFeatured) ?? upcoming[0];
 }
 
 export function getUpcomingEvents(today: Date = new Date()): CyclingEvent[] {

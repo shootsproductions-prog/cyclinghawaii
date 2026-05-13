@@ -4,11 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   getEvent,
+  getLiveEvent,
   EVENTS,
   daysUntil,
   formatEventDate,
   eventTypeColor,
-  type CyclingEvent,
+  type LiveCyclingEvent,
 } from "@/lib/events";
 
 interface Props {
@@ -37,9 +38,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Daily revalidation so BikeReg date/status updates land on prod
+// without a redeploy. The underlying fetchBikeRegEvent() also caches
+// at the fetch layer (24h tag), so this is cheap.
+export const revalidate = 86400;
+
 export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params;
-  const event = getEvent(slug);
+  const event = await getLiveEvent(slug);
   if (!event) notFound();
 
   return (
@@ -57,8 +63,36 @@ export default async function EventDetailPage({ params }: Props) {
   );
 }
 
+// ─── BikeReg status pill (detail-page variant) ───
+function DetailStatusBadge({ event }: { event: LiveCyclingEvent }) {
+  const status = event.bikereg?.status;
+  if (!status || status === "EventScheduled" || status === "Unknown")
+    return null;
+  const label =
+    status === "EventRescheduled"
+      ? "Rescheduled"
+      : status === "EventPostponed"
+      ? "Postponed"
+      : status === "EventCancelled"
+      ? "Cancelled"
+      : "Virtual";
+  const cls =
+    status === "EventCancelled"
+      ? "bg-red-600 text-white"
+      : status === "EventMovedOnline"
+      ? "bg-blue-600 text-white"
+      : "bg-amber-500 text-white";
+  return (
+    <span
+      className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${cls}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 // ───────────────────── Hero ─────────────────────
-function Hero({ event }: { event: CyclingEvent }) {
+function Hero({ event }: { event: LiveCyclingEvent }) {
   const days = daysUntil(event.date);
   const sport = eventTypeColor(event.type);
 
@@ -98,7 +132,21 @@ function Hero({ event }: { event: CyclingEvent }) {
                 Fundraiser
               </span>
             )}
+            <DetailStatusBadge event={event} />
           </div>
+          {event.bikereg?.status === "EventRescheduled" &&
+            event.bikereg.previousStartDate && (
+              <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 text-sm">
+                <strong className="font-semibold">Rescheduled.</strong> Was{" "}
+                {formatEventDate(event.bikereg.previousStartDate)} · now{" "}
+                {formatEventDate(event.date, event.endDate)} (per BikeReg).
+              </div>
+            )}
+          {event.bikereg?.status === "EventCancelled" && (
+            <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-600/10 border border-red-600/30 text-red-700 text-sm">
+              <strong className="font-semibold">Cancelled</strong> per BikeReg.
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <span className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-mist">
               {event.island} · {formatEventDate(event.date, event.endDate)}
@@ -138,7 +186,7 @@ function Hero({ event }: { event: CyclingEvent }) {
 }
 
 // ──────────── Quick Facts ────────────────
-function QuickFacts({ event }: { event: CyclingEvent }) {
+function QuickFacts({ event }: { event: LiveCyclingEvent }) {
   return (
     <section className="py-12 px-6 bg-bg">
       <div className="max-w-[860px] mx-auto">
@@ -169,7 +217,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 // ──────────── Description ────────────────
-function Description({ event }: { event: CyclingEvent }) {
+function Description({ event }: { event: LiveCyclingEvent }) {
   return (
     <section className="py-8 px-6 bg-bg">
       <div className="max-w-[720px] mx-auto">
@@ -242,7 +290,7 @@ function LauraCard({ takeText }: { takeText: string }) {
 function Schedule({
   items,
 }: {
-  items: NonNullable<CyclingEvent["schedule"]>;
+  items: NonNullable<LiveCyclingEvent["schedule"]>;
 }) {
   // Group by date
   const byDate = new Map<string, typeof items>();
@@ -316,7 +364,7 @@ function Schedule({
 }
 
 // ──────────── CTAs ────────────────
-function CTA({ event }: { event: CyclingEvent }) {
+function CTA({ event }: { event: LiveCyclingEvent }) {
   return (
     <section className="py-16 px-6 bg-bg">
       <div className="max-w-[700px] mx-auto text-center">

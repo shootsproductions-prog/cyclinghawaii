@@ -2,14 +2,60 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  getUpcomingEvents,
-  getPastEvents,
-  getFeaturedEvent,
+  getLiveEvents,
+  filterUpcoming,
+  filterPast,
+  pickFeatured,
   daysUntil,
   formatEventDate,
   eventTypeColor,
   type CyclingEvent,
+  type LiveCyclingEvent,
 } from "@/lib/events";
+
+// ─── BikeReg status — "Rescheduled" / "Cancelled" pill ──────────
+//
+// Rendered only when BikeReg flags the event as something other than
+// "scheduled as expected." Quiet UI for the normal case, loud when the
+// organizer actually changed something.
+function BikeRegStatusBadge({ event }: { event: LiveCyclingEvent }) {
+  const status = event.bikereg?.status;
+  if (!status || status === "EventScheduled" || status === "Unknown")
+    return null;
+
+  let label = "";
+  let cls = "";
+  switch (status) {
+    case "EventRescheduled":
+      label = "Rescheduled";
+      cls = "bg-amber-500 text-white";
+      break;
+    case "EventPostponed":
+      label = "Postponed";
+      cls = "bg-amber-500 text-white";
+      break;
+    case "EventCancelled":
+      label = "Cancelled";
+      cls = "bg-red-600 text-white";
+      break;
+    case "EventMovedOnline":
+      label = "Virtual";
+      cls = "bg-blue-600 text-white";
+      break;
+  }
+  return (
+    <span
+      className={`text-[0.6rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${cls}`}
+      title={
+        event.bikereg?.previousStartDate
+          ? `Was ${event.bikereg.previousStartDate} (per BikeReg)`
+          : undefined
+      }
+    >
+      {label}
+    </span>
+  );
+}
 
 // ─── Countdown — tier-aware urgency badge ────────────────────────
 function CountdownBadge({
@@ -64,10 +110,13 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-export default function EventsPage() {
-  const upcoming = getUpcomingEvents();
-  const past = getPastEvents();
-  const featured = getFeaturedEvent();
+export default async function EventsPage() {
+  // Live-merged events: editorial fields from events.ts, dates and
+  // registration status pulled from BikeReg JSON-LD when available.
+  const all = await getLiveEvents();
+  const upcoming = filterUpcoming(all);
+  const past = filterPast(all);
+  const featured = pickFeatured(upcoming);
   const featuredOnly = featured ? [featured] : [];
   const otherUpcoming = upcoming.filter((e) => e.slug !== featured?.slug);
 
@@ -117,7 +166,7 @@ function Hero({ hasUpcoming }: { hasUpcoming: boolean }) {
 }
 
 // ──────────── Featured Event ────────────────
-function FeaturedEventCard({ event }: { event: CyclingEvent }) {
+function FeaturedEventCard({ event }: { event: LiveCyclingEvent }) {
   const days = daysUntil(event.date);
   const sport = eventTypeColor(event.type);
 
@@ -163,6 +212,7 @@ function FeaturedEventCard({ event }: { event: CyclingEvent }) {
                     Fundraiser
                   </span>
                 )}
+                <BikeRegStatusBadge event={event} />
               </div>
             </div>
 
@@ -233,7 +283,7 @@ function FeaturedEventCard({ event }: { event: CyclingEvent }) {
 }
 
 // ──────────── Upcoming Grid ────────────────
-function UpcomingGrid({ events }: { events: CyclingEvent[] }) {
+function UpcomingGrid({ events }: { events: LiveCyclingEvent[] }) {
   return (
     <section className="py-12 px-6 bg-bg">
       <div className="max-w-[1100px] mx-auto">
@@ -255,7 +305,7 @@ function UpcomingGrid({ events }: { events: CyclingEvent[] }) {
   );
 }
 
-function EventCard({ event }: { event: CyclingEvent }) {
+function EventCard({ event }: { event: LiveCyclingEvent }) {
   const days = daysUntil(event.date);
   const sport = eventTypeColor(event.type);
   return (
@@ -279,12 +329,13 @@ function EventCard({ event }: { event: CyclingEvent }) {
             </div>
           </div>
         )}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           <span
             className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sport.bg} ${sport.text} bg-white`}
           >
             {event.type}
           </span>
+          <BikeRegStatusBadge event={event} />
         </div>
       </div>
       <div className="p-5 flex-1 flex flex-col">
@@ -320,7 +371,7 @@ function EventCard({ event }: { event: CyclingEvent }) {
 }
 
 // ──────────── Past Events ────────────────
-function PastArchive({ events }: { events: CyclingEvent[] }) {
+function PastArchive({ events }: { events: LiveCyclingEvent[] }) {
   return (
     <section className="py-12 px-6 bg-surface border-t border-border">
       <div className="max-w-[1100px] mx-auto">
