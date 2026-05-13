@@ -11,8 +11,22 @@
 
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { db, schema } from "@/db";
+import { eq } from "drizzle-orm";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: DrizzleAdapter(db, {
+    usersTable: schema.users,
+    accountsTable: schema.accounts,
+    sessionsTable: schema.sessions,
+    verificationTokensTable: schema.verificationTokens,
+  }),
+  // Database sessions — every request reads the session row, so
+  // changes (sign-out, username updates, premium flag) take effect
+  // immediately. Slightly heavier than JWT but the correctness is
+  // worth it for a platform that will grow user state.
+  session: { strategy: "database" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -60,26 +74,59 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: "/signin",
   },
-  callbacks: {
-    // Surface the provider on the session so the UI can show "Signed in
-    // with Strava" etc. and (later) gate cyclist-only features.
-    async jwt({ token, account, profile }) {
-      if (account) {
-        token.provider = account.provider;
-        // Stash Strava athlete id for later — we'll likely use this to
-        // auto-link a Strava-authed user to their /roast profile.
-        if (account.provider === "strava" && profile && "id" in profile) {
-          token.stravaAthleteId = String(profile.id);
+  events: {
+    // When a Strava sign-in completes, persist the athlete id and the
+    // premium/summit flag onto the user row. Auth.js stores the OAuth
+    // profile id in `accounts.providerAccountId`, but we want fast
+    // access from the user object (no join) for everyday queries like
+    // "is this premium athlete on the leaderboard?"
+    async signIn({ user, account, profile }) {
+      if (
+        account?.provider === "strava" &&
+        user?.id &&
+        profile &&
+        typeof profile === "object"
+      ) {
+        const p = profile as { id?: number | string; premium?: boolean; summit?: boolean };
+        const athleteId = p.id != null ? String(p.id) : undefined;
+        const premium = Boolean(p.premium || p.summit);
+        if (athleteId) {
+          await db
+            .update(schema.users)
+            .set({
+              stravaAthleteId: athleteId,
+              stravaPremium: premium,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.users.id, user.id));
         }
       }
-      return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.provider = token.provider as string | undefined;
-        session.user.stravaAthleteId = token.stravaAthleteId as
-          | string
-          | undefined;
+  },
+  callbacks: {
+    // Surface extra fields on the session so client components can
+    // gate features ("only Strava-premium users see this") without an
+    // extra round-trip.
+    async session({ session, user }) {
+      if (session.user && user) {
+        // Re-read the user row to pick up our extension fields. The
+        // adapter only fills the Auth.js core fields by default.
+        const rows = await db
+          .select({
+            username: schema.users.username,
+            stravaAthleteId: schema.users.stravaAthleteId,
+            stravaPremium: schema.users.stravaPremium,
+          })
+          .from(schema.users)
+          .where(eq(schema.users.id, user.id))
+          .limit(1);
+        const row = rows[0];
+        session.user.id = user.id;
+        if (row) {
+          session.user.username = row.username ?? undefined;
+          session.user.stravaAthleteId = row.stravaAthleteId ?? undefined;
+          session.user.stravaPremium = row.stravaPremium ?? false;
+        }
       }
       return session;
     },

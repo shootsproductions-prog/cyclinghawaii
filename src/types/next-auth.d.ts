@@ -1,23 +1,17 @@
-// Augment Auth.js types so `session.user.provider` and
-// `session.user.stravaAthleteId` are typed in components and route handlers.
+// Augment Auth.js types with platform-specific session fields so they
+// are typed wherever we call useSession() / auth().
 import "next-auth";
-import "next-auth/jwt";
 
 declare module "next-auth" {
   interface Session {
     user: {
+      id?: string;
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      provider?: string;
+      username?: string;
       stravaAthleteId?: string;
+      stravaPremium?: boolean;
     };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    provider?: string;
-    stravaAthleteId?: string;
   }
 }
