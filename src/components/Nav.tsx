@@ -17,7 +17,10 @@ const links: { hash?: string; href?: string; label: string }[] = [
   // being built out. Direct URLs work for testing.
 ];
 
-export default function Nav() {
+// `slot` is rendered between the link list and the burger button. We use
+// it to inject the server-rendered <NavAuth /> from the root layout so
+// this client component can stay client-side without pulling auth() in.
+export default function Nav({ slot }: { slot?: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -78,6 +81,8 @@ export default function Nav() {
           </li>
         ))}
       </ul>
+
+      {slot && <div className="ml-4 hidden md:flex items-center">{slot}</div>}
 
       <button
         onClick={() => setMenuOpen(!menuOpen)}

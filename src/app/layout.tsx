@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import Nav from "@/components/Nav";
+import NavAuth from "@/components/NavAuth";
 import Footer from "@/components/Footer";
 import EasterEgg from "@/components/EasterEgg";
 import "./globals.css";
@@ -62,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} style={{ backgroundColor: "#ffffff" }}>
       <body>
-        <Nav />
+        <Nav slot={<NavAuth />} />
         {children}
         <Footer />
         <EasterEgg />
