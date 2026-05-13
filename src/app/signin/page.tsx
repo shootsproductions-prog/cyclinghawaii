@@ -66,26 +66,18 @@ export default async function SignInPage({
             </button>
           </form>
 
-          <form
-            action={async () => {
-              "use server";
-              await signIn("strava", { redirectTo: callbackUrl });
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full inline-flex items-center justify-center gap-3 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-              </svg>
-              Continue with Strava
-            </button>
-          </form>
+          {/*
+            Strava sign-in is intentionally hidden right now. The Strava
+            API app's 1-athlete connect quota means real users can't
+            OAuth in until Strava approves our quota bump request. We
+            re-enable this when that approval lands (and likely after
+            we split the Workers/Claude Design service onto its own
+            Strava app so the callback domain isn't shared).
+          */}
         </div>
 
         <p className="text-mist/70 text-xs italic mt-8 text-center">
-          One account. Two ways in. Pick whichever you already trust.
+          Strava sign-in coming soon — pending Strava quota approval.
         </p>
       </div>
     </main>
