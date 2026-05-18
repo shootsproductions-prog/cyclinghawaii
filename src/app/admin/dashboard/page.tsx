@@ -298,6 +298,76 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* ── Analytics — outbound to Vercel dashboards ────── */}
+        <section>
+          <SectionLabel>Analytics</SectionLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <a
+              href="https://vercel.com/shootsproductions-5393s-projects/cyclinghawaii/analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card border border-border rounded-xl p-5 hover:border-strava transition-colors group no-underline"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="text-[0.65rem] font-bold uppercase tracking-widest text-strava">
+                  Web Analytics
+                </div>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="text-mist group-hover:text-strava transition-colors"
+                >
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                </svg>
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-text font-bold text-base mb-1">
+                Page views, referrers, geography
+              </div>
+              <div className="text-mist text-xs italic">
+                Anonymous, cookieless. View in Vercel dashboard.
+              </div>
+            </a>
+
+            <a
+              href="https://vercel.com/shootsproductions-5393s-projects/cyclinghawaii/speed-insights"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card border border-border rounded-xl p-5 hover:border-strava transition-colors group no-underline"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="text-[0.65rem] font-bold uppercase tracking-widest text-strava">
+                  Speed Insights
+                </div>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="text-mist group-hover:text-strava transition-colors"
+                >
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                </svg>
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-text font-bold text-base mb-1">
+                Core Web Vitals per route
+              </div>
+              <div className="text-mist text-xs italic">
+                LCP, CLS, INP. Catches slow pages before users complain.
+              </div>
+            </a>
+          </div>
+          <p className="text-mist/70 text-[0.65rem] italic mt-2.5">
+            Collection started May 18, 2026. Embedded charts on this page
+            would require swapping to PostHog or Plausible — future call.
+          </p>
+        </section>
+
         {/* ── Active now ─────────────────────────────── */}
         {(blocked.length > 0 || active.length > 0) && (
           <section>

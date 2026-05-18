@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Nav from "@/components/Nav";
 import NavAuth from "@/components/NavAuth";
 import Footer from "@/components/Footer";
@@ -67,6 +69,14 @@ export default function RootLayout({
         {children}
         <Footer />
         <EasterEgg />
+        {/*
+          Vercel Web Analytics — anonymous, cookieless page-view tracking
+          (referrers, devices, geography). Speed Insights — Core Web
+          Vitals per route (LCP, CLS, INP). Both auto-emit; we view the
+          data in the Vercel dashboard under the project's Analytics tab.
+        */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
