@@ -6,15 +6,19 @@ import Image from "next/image";
 
 // `href` is an absolute path. `hash` jumps to a homepage section.
 // Top nav stays product-focused. Lifestyle/social links live in the Footer.
+//
+// As of the June 21 launch restructure, the homepage IS the club —
+// so we no longer link to /club from the nav (it redirects to / anyway).
+// "Rides" now points to its own page where Vini's personal feed lives.
 const links: { hash?: string; href?: string; label: string }[] = [
-  { hash: "rides", label: "Rides" },
-  { hash: "log", label: "Log" },
-  { href: "/club", label: "Club" },
-  { href: "/roast", label: "Roast" },
+  { href: "/", label: "Home" },
+  { href: "/rides", label: "Rides" },
+  { href: "/log", label: "Log" },
   { href: "/events", label: "Events" },
-  // /tour and /routes exist as live pages but are intentionally
-  // unlinked from the nav while the Tour de Maui structure is still
-  // being built out. Direct URLs work for testing.
+  { href: "/store", label: "Store" },
+  { href: "/about", label: "About" },
+  // /roast, /tour, /routes are unlinked from the nav for now — direct
+  // URLs work, but they're not part of the launch story.
 ];
 
 // `slot` is rendered between the link list and the burger button. We use

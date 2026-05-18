@@ -1,0 +1,69 @@
+import type { Metadata } from "next";
+import { getStravaData } from "@/lib/strava";
+import { generateBlogEntries } from "@/lib/blog";
+import { getChallenge } from "@/lib/challenge";
+import { finalizeMonthlyBadge, loadBadges } from "@/lib/badges";
+import { awardBonusBadges } from "@/lib/bonus-badges";
+import Welcome from "@/components/Welcome";
+import FeaturedRide from "@/components/FeaturedRide";
+import Scarab from "@/components/Scarab";
+import Stats from "@/components/Stats";
+import Challenge from "@/components/Challenge";
+import InstagramGrid from "@/components/InstagramGrid";
+import LogFiles from "@/components/LogFiles";
+import YouTubePlaylist from "@/components/YouTubePlaylist";
+import SpotifyPlaylist from "@/components/SpotifyPlaylist";
+import Partners from "@/components/Partners";
+import Divider from "@/components/Divider";
+
+export const metadata: Metadata = {
+  title: "Rides — Cycling Hawaii",
+  description:
+    "Vini's rides, roasted weekly by Laura. The editorial feed of Cycling Hawaii — featured rides, monthly challenge, the bike, the playlists, the grind.",
+};
+
+// Revalidate every 15 min so new rides (and Laura's fresh roasts) show up fast
+export const revalidate = 900;
+
+export default async function Rides() {
+  const { featured, rides, stats, statsSummary, monthlyStats, bike, rawActivities } =
+    await getStravaData();
+  // generateBlogEntries still scans the recent rides for new content
+  const [blogEntries, challenge] = await Promise.all([
+    generateBlogEntries(featured, rides),
+    getChallenge(monthlyStats),
+  ]);
+  // Award the badge if the current challenge has been completed.
+  // (Past months are auto-finalized inside getChallenge when transitioning.)
+  await finalizeMonthlyBadge(challenge);
+  const [badges, bonusBadges] = await Promise.all([
+    loadBadges(),
+    awardBonusBadges(rawActivities, stats),
+  ]);
+
+  // Find the blog entry for the currently featured ride (for Laura's Take)
+  const featuredEntry = blogEntries.find((e) => e.rideId === featured.id);
+
+  return (
+    <main>
+      <Welcome />
+      <FeaturedRide ride={featured} featuredEntry={featuredEntry} />
+      <Divider />
+      <LogFiles entries={blogEntries.slice(0, 3)} showArchiveLink />
+      <Divider />
+      <Stats stats={statsSummary} />
+      <Divider />
+      <Challenge challenge={challenge} badges={badges} bonusBadges={bonusBadges} />
+      <Divider />
+      <Scarab bike={bike} />
+      <Divider />
+      <InstagramGrid />
+      <Divider />
+      <YouTubePlaylist />
+      <Divider />
+      <SpotifyPlaylist />
+      <Divider />
+      <Partners />
+    </main>
+  );
+}
