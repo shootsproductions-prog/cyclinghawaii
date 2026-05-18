@@ -242,6 +242,8 @@ export default async function Home() {
         />
       )}
 
+      <HowToJoin />
+
       <FromTheRides
         rideName={latestRideName}
         roast={latestRoast}
@@ -1284,6 +1286,106 @@ function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
               · Chief Reality Officer · cyclinghawaii.com
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────── How to Join — 3-step on-ramp ────────
+//
+// Sits right after the Wall, which is the social-proof moment ("look
+// at all these tagged rides"). This section answers the immediate
+// question a curious visitor has: "okay, how do I become one of them?"
+//
+// Three numbered cards, plain English, single big Strava CTA at the
+// bottom. We deliberately keep step 3 ("tag #cyclinghawaii") because
+// hashtag adoption is what makes the Wall, the Tagged Ride feed, and
+// Laura's weekly roundup feel populated by the community vs. by Vini.
+function HowToJoin() {
+  const steps = [
+    {
+      n: "01",
+      title: "Join on Strava",
+      desc:
+        "No application, no vetting, no waiting list. If you ride in Hawai'i, you're in.",
+    },
+    {
+      n: "02",
+      title: "Ride this week",
+      desc:
+        "Maui, O'ahu, Big Island, Kaua'i, Moloka'i, Lana'i. Any distance, any pace, any bike. Whatever you log to Strava counts.",
+    },
+    {
+      n: "03",
+      title: "Tag it #cyclinghawaii",
+      desc:
+        "Drop the hashtag in your activity description and Laura will find you in next week's roundup. Distinctions get awarded automatically.",
+    },
+  ];
+
+  return (
+    <section className="py-20 px-6 bg-bg border-t border-border">
+      <div className="max-w-[1100px] mx-auto">
+        <div className="text-center mb-12 max-w-[600px] mx-auto">
+          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
+            How to Join
+          </div>
+          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
+            Three steps. No barriers.
+          </h2>
+          <p className="text-mist text-base italic">
+            The whole on-ramp, plain English.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+          {steps.map((s) => (
+            <div
+              key={s.n}
+              className="relative bg-card border border-border rounded-2xl p-6 md:p-7 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div
+                className="absolute top-3 right-5 font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-strava/10 select-none leading-none"
+                aria-hidden
+              >
+                {s.n}
+              </div>
+              <div className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-strava mb-2 relative">
+                Step {s.n}
+              </div>
+              <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl md:text-2xl font-bold text-text mb-3 leading-tight relative">
+                {s.title}
+              </h3>
+              <p className="text-mist text-sm leading-relaxed relative">
+                {s.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <a
+            href="https://www.strava.com/clubs/cyclinghawaii"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
+          >
+            Join on Strava
+            <svg
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+          <p className="text-mist text-xs italic mt-4">
+            Free. Forever. No drop rides.
+          </p>
         </div>
       </div>
     </section>
