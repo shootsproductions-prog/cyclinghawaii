@@ -20,6 +20,8 @@ import { assignRoles } from "@/lib/peloton-roles";
 import { getAccessToken, getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
+import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
+import { getWeeklyRoundup, type WeeklyRoundup } from "@/lib/laura-roundup";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
@@ -185,6 +187,31 @@ export default async function Home() {
   const wallTop3 = wall.slice(0, 3);
   const wallDescriptions = await fetchWallDescriptions(wallTop3);
 
+  // The Honor Roll — multi-axis distinctions, computed deterministically
+  // from the current club activity feed. Cached with the page's ISR
+  // window (15min) since the inputs are already cached at that rate.
+  const honorRoll = club
+    ? computeHonorRoll(club.activities, club.members)
+    : [];
+
+  // Laura's weekly roundup. Cached in Vercel Blob and regenerated only
+  // when older than ~7 days — so this call is usually a single blob
+  // read, no Claude API hit on most renders.
+  const roundup = club
+    ? await getWeeklyRoundup(club.activities, honorRoll).catch(() => null)
+    : null;
+
+  // Avatar lookup also serves the Honor Roll cards.
+  const profileByKey = new Map<string, string>();
+  if (club) {
+    for (const m of club.members) {
+      const key = `${m.firstname} ${m.lastname[0]}.`;
+      if (m.profile && m.profile !== "avatar/athlete/large.png") {
+        profileByKey.set(key, m.profile);
+      }
+    }
+  }
+
   return (
     <main>
       <Hero />
@@ -193,7 +220,9 @@ export default async function Home() {
         <Roster members={roster} activities={club.activities} />
       )}
 
-      <HonorRoll />
+      <HonorRoll awards={honorRoll} profileByKey={profileByKey} />
+
+      {roundup && <LauraRoundup roundup={roundup} />}
 
       <QuotePullout />
 
@@ -275,15 +304,33 @@ function Hero() {
         </div>
         <div className="max-w-[820px]">
           <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-            The Club
+            Cycling Hawai&apos;i · Strava Club · Maui
           </div>
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
             Just<span className="text-strava"> Ride.</span>
           </h1>
-          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px]">
+          <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px] mb-7">
             No team kit, no drop rides, no podiums — and the audacity to call
             it a club.
           </p>
+          <a
+            href="https://www.strava.com/clubs/cyclinghawaii"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
+          >
+            Join on Strava
+            <svg
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
         </div>
       </div>
     </section>
@@ -1084,26 +1131,26 @@ function Join({ variant }: { variant: "primary" | "secondary" }) {
 //
 // Multi-axis distinctions that name riders for *who they are*, not where
 // they rank. Pure ranking is Strava's job. Cycling Hawai'i names you
-// Trade Wind Survivor of June, or Lanterne Rouge — first across the line
-// of last place — and the leaderboard reads like a constellation, not
-// a stack rank. The computation that actually awards these from club
-// activity data lands next session; for launch this is the placeholder
-// + the manifesto for the system.
-function HonorRoll() {
-  const sample = [
-    { label: "Trade Wind Survivor", desc: "Most headwind miles this month." },
-    { label: "Lanterne Rouge", desc: "Last across the line. First in our hearts." },
-    { label: "Crater Road Veteran", desc: "Most Haleakalā ascents." },
-    { label: "Early Bird", desc: "Most pre-7am rides." },
-    { label: "Snake Eater", desc: "Most descents." },
-    { label: "Pied Piper", desc: "Started the most group rides." },
-    { label: "Solo Hour", desc: "Longest unbroken ride." },
-    { label: "Hana Faithful", desc: "Most miles on the Hana Highway." },
-  ];
+// The Climber, Lanterne Rouge, The Iron Calves — and the leaderboard
+// reads like a constellation, not a stack rank.
+//
+// Computation lives in lib/honor-roll.ts; this component just renders
+// the awarded list. Each award has a winner, a stat for proof, and a
+// short Laura-style description.
+function HonorRoll({
+  awards,
+  profileByKey,
+}: {
+  awards: AwardedDistinction[];
+  profileByKey: Map<string, string>;
+}) {
+  if (awards.length === 0) {
+    return null;
+  }
   return (
     <section className="py-20 px-6 bg-surface border-t border-border">
       <div className="max-w-[1100px] mx-auto">
-        <div className="text-center mb-10 max-w-[640px] mx-auto">
+        <div className="text-center mb-12 max-w-[640px] mx-auto">
           <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
             The Honor Roll
           </div>
@@ -1111,50 +1158,158 @@ function HonorRoll() {
             Not a ranking. A constellation.
           </h2>
           <p className="text-mist text-base italic">
-            Twenty-plus rotating distinctions, awarded monthly. Everyone
-            gets seen. Some get roasted.
+            Ten rotating distinctions, awarded from the recent feed.
+            Everyone gets seen. Some get roasted.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {sample.map((d) => (
-            <div
-              key={d.label}
-              className="bg-card border border-border rounded-xl p-4 shadow-sm"
-            >
-              <div className="text-[0.65rem] font-bold uppercase tracking-widest text-strava mb-1.5">
-                {d.label}
-              </div>
-              <div className="text-mist text-xs italic leading-snug">
-                {d.desc}
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {awards.map((a) => (
+            <HonorCard
+              key={a.id}
+              award={a}
+              profileUrl={profileByKey.get(a.winnerKey)}
+            />
           ))}
         </div>
 
-        <p className="text-center text-mist text-xs italic mt-8">
-          First awards drop with Laura&apos;s weekly round-up — coming soon.
+        <p className="text-center text-mist text-xs italic mt-10">
+          Updates with the club&apos;s recent feed. Recomputes every 15 min.
         </p>
       </div>
     </section>
   );
 }
 
+function HonorCard({
+  award,
+  profileUrl,
+}: {
+  award: AwardedDistinction;
+  profileUrl?: string;
+}) {
+  const initials = `${safeInitial(award.winnerName.split(" ")[0] ?? "")}${safeInitial(
+    award.winnerName.split(" ").slice(-1)[0] ?? ""
+  )}`;
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
+      <div className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-strava">
+        {award.label}
+      </div>
+
+      <div className="flex items-center gap-3">
+        {profileUrl ? (
+          <Image
+            src={profileUrl}
+            alt={award.winnerName}
+            width={44}
+            height={44}
+            className="rounded-full object-cover shrink-0"
+            unoptimized
+          />
+        ) : (
+          <div className="w-11 h-11 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold text-xs shrink-0">
+            {initials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-text text-sm leading-tight truncate">
+            {award.winnerName}
+          </div>
+          <div className="font-[family-name:var(--font-space-grotesk)] text-strava text-sm font-bold mt-0.5">
+            {award.statText}
+          </div>
+        </div>
+      </div>
+
+      <div className="text-mist text-xs italic leading-snug border-t border-border pt-3">
+        {award.description}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────── Laura's weekly roundup ────────────
+//
+// Sits right under the Honor Roll. The point is to tie the awards
+// together in a single piece of prose that reads like a club bulletin
+// from a slightly tired but affectionate bookkeeper. Generation is
+// cached for ~7 days in Vercel Blob (see lib/laura-roundup.ts).
+function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
+  const generated = new Date(roundup.generatedAt);
+  const generatedStr = generated.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  return (
+    <section className="py-20 px-6 bg-bg border-t border-border">
+      <div className="max-w-[760px] mx-auto">
+        <div className="text-center mb-10">
+          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
+            From Laura · This Week
+          </div>
+          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
+            {roundup.title}
+          </h2>
+          <p className="text-mist text-xs uppercase tracking-widest">
+            Posted {generatedStr}
+          </p>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-8 md:p-10 shadow-sm">
+          {/* Plain-paragraph body — Laura writes prose, not markdown. */}
+          <div className="text-text text-base md:text-lg leading-relaxed space-y-5 whitespace-pre-line">
+            {roundup.body.split(/\n\n+/).map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-5 mt-7 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-strava/10 flex items-center justify-center shrink-0">
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                stroke="#fc5200"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <div className="text-xs text-mist italic">
+              <strong className="text-text not-italic">
+                Laura Ryder
+              </strong>{" "}
+              · Chief Reality Officer · cyclinghawaii.com
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─────────────── Quote Pullout (the line) ──────────
+//
+// The brand line. Sits midway down the homepage as a breath between
+// the data-driven sections and the editorial / merch sections below.
 function QuotePullout() {
   return (
-    <section className="py-24 px-6 bg-bg">
+    <section className="py-24 md:py-28 px-6 bg-bg">
       <div className="max-w-[820px] mx-auto text-center">
         <div className="text-strava font-[family-name:var(--font-space-grotesk)] text-6xl md:text-7xl leading-none mb-4 select-none">
           &ldquo;
         </div>
-        <blockquote className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text leading-[1.05]">
-          Strava reduces every rider to a number.
-          <br />
-          <span className="text-strava">Cycling Hawaii recognizes</span> everyone as a character.
+        <blockquote className="font-[family-name:var(--font-space-grotesk)] text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-text leading-[1.1]">
+          Strava reduces every rider to a number.{" "}
+          <span className="text-strava">
+            Cycling Hawai&apos;i recognizes
+          </span>{" "}
+          everyone as a character.
         </blockquote>
         <div className="text-[0.65rem] uppercase tracking-[0.3em] text-mist mt-8 font-semibold">
-          — The Cycling Hawaii ethos
+          — The Cycling Hawai&apos;i ethos
         </div>
       </div>
     </section>
