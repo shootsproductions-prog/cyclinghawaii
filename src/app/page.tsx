@@ -22,7 +22,6 @@ import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
 import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
-import { hasVerifiedShops } from "@/lib/rentals";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
@@ -257,8 +256,6 @@ export default async function Home() {
 
       <HowToJoin />
 
-      <DirectoryPromo />
-
       <FromTheRides
         rideName={latestRideName}
         roast={latestRoast}
@@ -330,7 +327,7 @@ function Hero() {
             No team kit, no drop rides, no podiums — and the audacity to call
             it a club.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4 md:gap-6">
             <a
               href="https://www.strava.com/clubs/cyclinghawaii"
               target="_blank"
@@ -349,22 +346,27 @@ function Hero() {
                 <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </a>
-            <Link
-              href="/rentals"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors no-underline"
-            >
-              Find a bike rental
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
+
+            {/* Strava's official club-activity widget — a small trust badge
+                showing this week's rides / miles / hours / elevation for
+                club 737679. Sits next to the primary CTA so a visitor sees
+                "here's a real Strava club with real numbers" the moment
+                they land. Wrapped in a white card because the widget's own
+                styling assumes a light background; the wrapper keeps it
+                looking intentional in dark mode too. */}
+            <div className="rounded-2xl overflow-hidden bg-white shadow-md shrink-0">
+              <iframe
+                src="https://www.strava.com/clubs/737679/latest-rides/3693e9207d093a1577fbd442e4497c23c1f5a1b7?show_rides=false"
+                width="300"
+                height="160"
+                allowTransparency
+                frameBorder={0}
+                scrolling="no"
+                loading="lazy"
+                title="Cycling Hawaiʻi — this week on Strava"
+                className="block"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -374,15 +376,12 @@ function Hero() {
 
 // ─── Aloha Gravel countdown strip ──────────────────────
 // Sits right under the Hero as long as the event is in the future.
-// Auto-hides once the date has passed. Rentals link only appears when
-// the rentals catalog has at least one verified shop — no point sending
-// visitors to a page of placeholders.
+// Auto-hides once the date has passed.
 function AlohaGravelStrip() {
   const days = daysUntilIso(ALOHA_GRAVEL_DATE);
   if (days < 0) return null;
   const label =
     days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
-  const rentalsLinkOn = hasVerifiedShops();
 
   return (
     <section className="px-6 md:px-10 lg:px-16 pb-8 md:pb-10 bg-bg">
@@ -406,64 +405,13 @@ function AlohaGravelStrip() {
             Lap-based gravel on Maui. Ride as many 9-mile loops as your legs
             allow. Fundraiser.
           </div>
-          <div className="flex flex-wrap items-center gap-4 shrink-0">
-            <Link
-              href="/events/aloha-gravel-2026"
-              className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap"
-            >
-              Event details →
-            </Link>
-            {rentalsLinkOn && (
-              <Link
-                href="/rentals?ag=1"
-                className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap"
-              >
-                Rent a gravel bike →
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Directory promo — /rentals bridge ────────────────
-// A quiet editorial block promoting the rentals directory. Gated on
-// hasVerifiedShops() so it stays hidden while the catalog is all seed
-// placeholders — no promoting an empty room.
-function DirectoryPromo() {
-  if (!hasVerifiedShops()) return null;
-  return (
-    <section className="py-16 px-6 bg-surface border-t border-border">
-      <div className="max-w-[820px] mx-auto text-center">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-          The Directory
-        </div>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-4">
-          Bike rentals across the islands.
-        </h2>
-        <p className="text-mist text-base italic max-w-[560px] mx-auto mb-8 leading-relaxed">
-          We don&apos;t rent bikes. We tell you which shops do — so you
-          don&apos;t have to Google them one island at a time. Booking
-          happens on each shop&apos;s own site.
-        </p>
-        <Link
-          href="/rentals"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors no-underline"
-        >
-          Browse the Directory
-          <svg
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            viewBox="0 0 24 24"
+          <Link
+            href="/events/aloha-gravel-2026"
+            className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap shrink-0"
           >
-            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </Link>
+            Event details →
+          </Link>
+        </div>
       </div>
     </section>
   );
