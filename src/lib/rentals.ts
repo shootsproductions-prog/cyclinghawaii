@@ -194,23 +194,40 @@ export function hasVerifiedShops(): boolean {
 }
 
 /**
- * Filter shops by any combination of island / bike type / delivery.
- * Undefined filters mean "any". Empty result is a valid outcome.
+ * Filter shops by any combination of search text / island / bike type /
+ * delivery. Undefined filters mean "any". Empty result is a valid outcome.
+ *
+ * Search matches (case-insensitive substring) against shop name, town,
+ * and human-readable bike-type labels — so a query like "gravel" hits
+ * both "Gravel" as a bike type and any shop with "Gravel" in its name.
  */
 export function filterShops(
   shops: RentalShop[],
   opts: {
+    search?: string;
     island?: RentalIsland;
     bikeType?: BikeType;
     delivery?: boolean;
     alohaGravelReady?: boolean;
   }
 ): RentalShop[] {
+  const q = opts.search?.trim().toLowerCase();
   return shops.filter((s) => {
     if (opts.island && s.island !== opts.island) return false;
     if (opts.bikeType && !s.bikeTypes.includes(opts.bikeType)) return false;
     if (opts.delivery && !s.features.includes("delivery")) return false;
     if (opts.alohaGravelReady && !s.alohaGravelReady) return false;
+    if (q) {
+      const hay = [
+        s.name,
+        s.town,
+        s.island,
+        ...s.bikeTypes.map((t) => BIKE_TYPE_LABEL[t]),
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     return true;
   });
 }

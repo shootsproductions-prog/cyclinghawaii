@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 
 interface Props {
   searchParams: Promise<{
+    q?: string;
     island?: string;
     type?: string;
     delivery?: string;
@@ -51,6 +52,7 @@ function coerceBikeType(raw: string | undefined): BikeType | undefined {
 
 export default async function RentalsPage({ searchParams }: Props) {
   const params = await searchParams;
+  const search = params.q?.trim() ?? "";
   const island = coerceIsland(params.island);
   const bikeType = coerceBikeType(params.type);
   const delivery = params.delivery === "1";
@@ -58,6 +60,7 @@ export default async function RentalsPage({ searchParams }: Props) {
 
   const filtered = sortShops(
     filterShops(RENTAL_SHOPS, {
+      search,
       island,
       bikeType,
       delivery,
@@ -65,7 +68,13 @@ export default async function RentalsPage({ searchParams }: Props) {
     })
   );
 
-  const hasFilter = !!(island || bikeType || delivery || alohaGravelReady);
+  const hasFilter = !!(
+    search ||
+    island ||
+    bikeType ||
+    delivery ||
+    alohaGravelReady
+  );
   const showPlaceholderBanner = hasAnyPlaceholders();
   const islandsInCatalog = activeIslands(RENTAL_SHOPS);
 
@@ -74,8 +83,11 @@ export default async function RentalsPage({ searchParams }: Props) {
       {showPlaceholderBanner && <PlaceholderBanner />}
       <Hero />
       <AlohaGravelCallout />
+      <SearchBar
+        current={{ search, island, bikeType, delivery, alohaGravelReady }}
+      />
       <FilterBar
-        current={{ island, bikeType, delivery, alohaGravelReady }}
+        current={{ search, island, bikeType, delivery, alohaGravelReady }}
         islands={islandsInCatalog}
       />
       {filtered.length > 0 ? (
@@ -102,7 +114,7 @@ function PlaceholderBanner() {
   );
 }
 
-// ───────────────────── Hero ─────────────────────
+// ─────────────────── Hero ─────────────────────
 function Hero() {
   return (
     <section className="pt-24 md:pt-28 pb-10 md:pb-14 px-6 md:px-10 lg:px-16 bg-bg">
@@ -163,12 +175,118 @@ function AlohaGravelCallout() {
   );
 }
 
+// ─── Search bar — URL-param based, no client JS ────
+// Submits as a GET form to /rentals?q=…, carrying the currently-active
+// island / bike-type / delivery / AG filters along as hidden inputs so
+// searching doesn't reset what the user already narrowed to.
+function SearchBar({
+  current,
+}: {
+  current: {
+    search: string;
+    island?: RentalIsland;
+    bikeType?: BikeType;
+    delivery?: boolean;
+    alohaGravelReady?: boolean;
+  };
+}) {
+  const hasSearch = current.search.length > 0;
+  return (
+    <section className="px-6 md:px-10 lg:px-16 bg-bg pb-4 md:pb-6">
+      <div className="max-w-[1280px] mx-auto">
+        <form
+          method="GET"
+          action="/rentals"
+          className="flex flex-col sm:flex-row gap-2"
+        >
+          {/* Preserve other active filters when submitting a search */}
+          {current.island && (
+            <input type="hidden" name="island" value={current.island} />
+          )}
+          {current.bikeType && (
+            <input type="hidden" name="type" value={current.bikeType} />
+          )}
+          {current.delivery && <input type="hidden" name="delivery" value="1" />}
+          {current.alohaGravelReady && (
+            <input type="hidden" name="ag" value="1" />
+          )}
+
+          <label className="flex-1 flex items-center gap-2 bg-card border border-border rounded-full px-5 py-3 focus-within:border-strava transition-colors">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className="text-mist shrink-0"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="search"
+              name="q"
+              defaultValue={current.search}
+              placeholder="Search shops, towns, or bike types…"
+              className="flex-1 bg-transparent outline-none text-text text-sm md:text-base placeholder:text-mist"
+              autoComplete="off"
+              aria-label="Search rentals"
+            />
+          </label>
+          <button
+            type="submit"
+            className="px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20 shrink-0"
+          >
+            Search
+          </button>
+          {hasSearch && (
+            <Link
+              href={buildFilterHref(current, { q: "" })}
+              className="px-4 py-3 text-mist text-xs font-semibold uppercase tracking-wider hover:text-strava transition-colors no-underline self-center whitespace-nowrap"
+            >
+              Clear
+            </Link>
+          )}
+        </form>
+      </div>
+    </section>
+  );
+}
+
+// Shared URL builder used by both SearchBar (for "Clear") and FilterBar
+// (for pill toggles). Preserves whatever's currently active, then applies
+// the patch, then drops empty values.
+function buildFilterHref(
+  current: {
+    search: string;
+    island?: RentalIsland;
+    bikeType?: BikeType;
+    delivery?: boolean;
+    alohaGravelReady?: boolean;
+  },
+  patch: Partial<Record<string, string>>
+): string {
+  const next: Record<string, string> = {};
+  if (current.search) next.q = current.search;
+  if (current.island) next.island = current.island;
+  if (current.bikeType) next.type = current.bikeType;
+  if (current.delivery) next.delivery = "1";
+  if (current.alohaGravelReady) next.ag = "1";
+  Object.assign(next, patch);
+  for (const k of Object.keys(next)) if (!next[k]) delete next[k];
+  const qs = new URLSearchParams(next).toString();
+  return qs ? `/rentals?${qs}` : "/rentals";
+}
+
 // ─── Filter bar — URL-param based, works without JS ─────
 function FilterBar({
   current,
   islands,
 }: {
   current: {
+    search: string;
     island?: RentalIsland;
     bikeType?: BikeType;
     delivery?: boolean;
@@ -176,20 +294,10 @@ function FilterBar({
   };
   islands: RentalIsland[];
 }) {
-  // Build param objects for each pill link. Selecting a pill toggles that
-  // filter; other filters stay put.
-  const buildHref = (patch: Partial<Record<string, string>>): string => {
-    const next: Record<string, string> = {};
-    if (current.island) next.island = current.island;
-    if (current.bikeType) next.type = current.bikeType;
-    if (current.delivery) next.delivery = "1";
-    if (current.alohaGravelReady) next.ag = "1";
-    Object.assign(next, patch);
-    // Drop empty values so the URL is tidy
-    for (const k of Object.keys(next)) if (!next[k]) delete next[k];
-    const qs = new URLSearchParams(next).toString();
-    return qs ? `/rentals?${qs}` : "/rentals";
-  };
+  // Pill toggles carry the search query along so a filter click doesn't
+  // reset an in-flight search.
+  const buildHref = (patch: Partial<Record<string, string>>): string =>
+    buildFilterHref(current, patch);
 
   return (
     <section className="px-6 md:px-10 lg:px-16 bg-bg pb-8 border-b border-border">
