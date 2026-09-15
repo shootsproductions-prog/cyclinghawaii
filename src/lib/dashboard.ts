@@ -265,6 +265,14 @@ export const INITIATIVES: Initiative[] = [
       "Helmet, lights, hydration, sunscreen, anti-chafe, cycling cap. Lower priority than launch — better to ship 7 great reviews than 14 thin ones.",
     estimateDays: 0.5,
   },
+  {
+    id: "app-for-fun",
+    title: "Cycling Hawaiʻi app (exploratory)",
+    status: "queued",
+    category: "Platform",
+    detail:
+      "Vini's for-fun idea, scope TBD. Options: (a) iOS-first native, (b) PWA wrapping the current site, (c) React Native cross-platform. Likely candidates for features: live club feed, Honor Roll notifications, roast-me-now button, tap-to-log. No timeline; parked so it doesn't get forgotten. Confirm scope + platform before spending real effort.",
+  },
 ];
 
 // ───────────────────────────────────────────────────────

@@ -185,6 +185,15 @@ export function hasAnyPlaceholders(): boolean {
 }
 
 /**
+ * True once at least one shop in the catalog is fully verified. Used by
+ * the homepage to gate the /rentals promo — no point sending visitors
+ * over there while the catalog is still all seed placeholders.
+ */
+export function hasVerifiedShops(): boolean {
+  return RENTAL_SHOPS.some((s) => s.verified === "verified");
+}
+
+/**
  * Filter shops by any combination of island / bike type / delivery.
  * Undefined filters mean "any". Empty result is a valid outcome.
  */
