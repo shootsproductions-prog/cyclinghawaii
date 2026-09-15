@@ -21,7 +21,7 @@ import { getAccessToken, getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
-import { getFortnightRoundup, type FortnightRoundup } from "@/lib/laura-fortnight";
+import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
 import { hasVerifiedShops } from "@/lib/rentals";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
@@ -119,7 +119,7 @@ async function fetchWallDescriptions(
 export const metadata: Metadata = {
   title: "Cycling Hawaii — A Strava club for cyclists in the islands",
   description:
-    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted every fortnight by Laura. Founded on Maui.",
+    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted every two weeks by Laura in The Dispatch. Founded on Maui.",
 };
 
 export const revalidate = 900;
@@ -206,11 +206,11 @@ export default async function Home() {
     ? computeHonorRoll(club.activities, club.members)
     : [];
 
-  // Laura's fortnightly roundup. Cached in Vercel Blob and regenerated only
-  // when older than ~7 days — so this call is usually a single blob
-  // read, no Claude API hit on most renders.
+  // The Dispatch — Laura's bi-weekly editorial. Cached in Vercel Blob
+  // and regenerated only when older than ~14 days, so this call is
+  // usually a single blob read, no Claude API hit on most renders.
   const roundup = club
-    ? await getFortnightRoundup(club.activities, honorRoll).catch(() => null)
+    ? await getDispatch(club.activities, honorRoll).catch(() => null)
     : null;
 
   // Avatar lookup also serves the Honor Roll cards.
@@ -235,7 +235,7 @@ export default async function Home() {
 
       <HonorRoll awards={honorRoll} profileByKey={profileByKey} />
 
-      {roundup && <LauraRoundup roundup={roundup} />}
+      {roundup && <LauraDispatch roundup={roundup} />}
 
       <QuotePullout />
 
@@ -1361,13 +1361,13 @@ function HonorCard({
   );
 }
 
-// ─────────────── Laura's fortnightly roundup ──────
+// ─────────────── Laura's Dispatch ──────────────────
 //
 // Sits right under the Honor Roll. The point is to tie the awards
 // together in a single piece of prose that reads like a club bulletin
 // from a slightly tired but affectionate bookkeeper. Generation is
-// cached for ~14 days in Vercel Blob (see lib/laura-fortnight.ts).
-function LauraRoundup({ roundup }: { roundup: FortnightRoundup }) {
+// cached for ~14 days in Vercel Blob (see lib/laura-dispatch.ts).
+function LauraDispatch({ roundup }: { roundup: DispatchRoundup }) {
   const generated = new Date(roundup.generatedAt);
   const generatedStr = generated.toLocaleDateString("en-US", {
     month: "short",
@@ -1378,7 +1378,7 @@ function LauraRoundup({ roundup }: { roundup: FortnightRoundup }) {
       <div className="max-w-[760px] mx-auto">
         <div className="text-center mb-10">
           <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            From Laura · The Fortnight
+            From Laura · The Dispatch
           </div>
           <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
             {roundup.title}
@@ -1431,7 +1431,7 @@ function LauraRoundup({ roundup }: { roundup: FortnightRoundup }) {
 // Three numbered cards, plain English, single big Strava CTA at the
 // bottom. We deliberately keep step 3 ("tag #cyclinghawaii") because
 // hashtag adoption is what makes the Wall, the Tagged Ride feed, and
-// Laura's fortnightly roundup feel populated by the community vs. by Vini.
+// Laura's Dispatch feel populated by the community vs. by Vini.
 function HowToJoin() {
   const steps = [
     {
@@ -1450,7 +1450,7 @@ function HowToJoin() {
       n: "03",
       title: "Tag it #cyclinghawaii",
       desc:
-        "Drop the hashtag in your activity description and Laura will find you in the next fortnightly roundup. Distinctions get awarded automatically.",
+        "Drop the hashtag in your activity description and Laura will find you in the next Dispatch. Distinctions get awarded automatically.",
     },
   ];
 
