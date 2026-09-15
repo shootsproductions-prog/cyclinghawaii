@@ -22,8 +22,20 @@ import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
 import { getFortnightRoundup, type FortnightRoundup } from "@/lib/laura-fortnight";
+import { hasVerifiedShops } from "@/lib/rentals";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
+
+// Aloha Gravel · Nov 7 2026. Homepage strip auto-hides after the event
+// date passes; safe to leave the reference for the following year's
+// event too — just bump the date when it's set.
+const ALOHA_GRAVEL_DATE = "2026-11-07";
+
+function daysUntilIso(iso: string): number {
+  const target = new Date(iso + "T00:00:00");
+  const now = new Date();
+  return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+}
 
 /**
  * Fetch ride descriptions for any Wall items that are by Vini. The Strava
@@ -215,6 +227,7 @@ export default async function Home() {
   return (
     <main>
       <Hero />
+      <AlohaGravelStrip />
 
       {roster.length > 0 && club && (
         <Roster members={roster} activities={club.activities} />
@@ -244,6 +257,8 @@ export default async function Home() {
 
       <HowToJoin />
 
+      <DirectoryPromo />
+
       <FromTheRides
         rideName={latestRideName}
         roast={latestRoast}
@@ -260,7 +275,7 @@ export default async function Home() {
   );
 }
 
-// ─── helper: rank members for the Roster ─────────────────────
+// ─── helper: rank members for the Roster ─────────────────
 function buildRoster(club: ClubData, cap: number): ClubMember[] {
   // Tally miles per "First L." key from recent activities
   const milesByKey = new Map<string, number>();
@@ -315,25 +330,140 @@ function Hero() {
             No team kit, no drop rides, no podiums — and the audacity to call
             it a club.
           </p>
-          <a
-            href="https://www.strava.com/clubs/cyclinghawaii"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
-          >
-            Join on Strava
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href="https://www.strava.com/clubs/cyclinghawaii"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
             >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
+              Join on Strava
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </a>
+            <Link
+              href="/rentals"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors no-underline"
+            >
+              Find a bike rental
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </Link>
+          </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Aloha Gravel countdown strip ──────────────────────
+// Sits right under the Hero as long as the event is in the future.
+// Auto-hides once the date has passed. Rentals link only appears when
+// the rentals catalog has at least one verified shop — no point sending
+// visitors to a page of placeholders.
+function AlohaGravelStrip() {
+  const days = daysUntilIso(ALOHA_GRAVEL_DATE);
+  if (days < 0) return null;
+  const label =
+    days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+  const rentalsLinkOn = hasVerifiedShops();
+
+  return (
+    <section className="px-6 md:px-10 lg:px-16 pb-8 md:pb-10 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="bg-strava/8 border border-strava/25 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-strava">
+              Aloha Gravel · Nov 7
+            </div>
+            <span
+              className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                days <= 7
+                  ? "bg-strava text-white"
+                  : "bg-strava/15 text-strava"
+              }`}
+            >
+              {label}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0 text-mist text-xs md:text-sm">
+            Lap-based gravel on Maui. Ride as many 9-mile loops as your legs
+            allow. Fundraiser.
+          </div>
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
+            <Link
+              href="/events/aloha-gravel-2026"
+              className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap"
+            >
+              Event details →
+            </Link>
+            {rentalsLinkOn && (
+              <Link
+                href="/rentals?ag=1"
+                className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap"
+              >
+                Rent a gravel bike →
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Directory promo — /rentals bridge ────────────────
+// A quiet editorial block promoting the rentals directory. Gated on
+// hasVerifiedShops() so it stays hidden while the catalog is all seed
+// placeholders — no promoting an empty room.
+function DirectoryPromo() {
+  if (!hasVerifiedShops()) return null;
+  return (
+    <section className="py-16 px-6 bg-surface border-t border-border">
+      <div className="max-w-[820px] mx-auto text-center">
+        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
+          The Directory
+        </div>
+        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-4">
+          Bike rentals across the islands.
+        </h2>
+        <p className="text-mist text-base italic max-w-[560px] mx-auto mb-8 leading-relaxed">
+          We don&apos;t rent bikes. We tell you which shops do — so you
+          don&apos;t have to Google them one island at a time. Booking
+          happens on each shop&apos;s own site.
+        </p>
+        <Link
+          href="/rentals"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors no-underline"
+        >
+          Browse the Directory
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </Link>
       </div>
     </section>
   );
