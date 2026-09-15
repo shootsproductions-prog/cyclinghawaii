@@ -48,14 +48,14 @@ export interface ShippedItem {
   url?: string;
 }
 
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 //  PROJECT START — used for "days since launch" calculation
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 export const PROJECT_START_DATE = "2026-04-08";
 
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 //  STRATEGIC GOALS — top-level objectives
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 export const STRATEGIC_GOALS = [
   {
     id: "launch",
@@ -83,9 +83,9 @@ export const STRATEGIC_GOALS = [
   },
 ];
 
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 //  ACTIVE & QUEUED INITIATIVES
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 export const INITIATIVES: Initiative[] = [
   // ── BLOCKED / WAITING ──
   {
@@ -96,6 +96,17 @@ export const INITIATIVES: Initiative[] = [
     detail:
       "Submitted Apr 28 — Day 20 today. Follow-up email queued for May 19 (tomorrow). Once approved: re-enable Strava sign-in on /signin, build basic /[username] roster pages for The Twelve.",
     blockedBy: "Strava developer review",
+  },
+
+  // ── ACTIVE — /rentals directory curation ──
+  {
+    id: "rentals-directory",
+    title: "/rentals directory — Phase 1 curation pass",
+    status: "active",
+    category: "Platform",
+    detail:
+      "Infrastructure shipped (routes, filters, detail pages, Aloha Gravel lens). 4 PLACEHOLDER shops seeded; the page shows a 'coming soon — verifying listings' banner until every placeholder is replaced with a real, verified shop. Target: 15-20 shops across Maui, Oʻahu, Big Island, Kauaʻi before promoting the route publicly. Not yet linked from nav.",
+    estimateDays: 3,
   },
 
   // ── ACTIVE — the June 21 launch sprint ──
@@ -256,9 +267,9 @@ export const INITIATIVES: Initiative[] = [
   },
 ];
 
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 //  CALENDAR — upcoming dates
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 export const MILESTONES: Milestone[] = [
   {
     id: "strava-followup",
@@ -359,9 +370,9 @@ export const MILESTONES: Milestone[] = [
   },
 ];
 
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 //  RECENTLY SHIPPED — newest first
-// ────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────
 export const SHIPPED: ShippedItem[] = [
   {
     id: "drive-cleanup",
@@ -540,7 +551,6 @@ export const SHIPPED: ShippedItem[] = [
     title: "/club — Manifesto, Roster, Wall, Conditions, peloton roles",
     category: "Community",
     date: "2026-04-26",
-    url: "/club",
   },
   {
     id: "stats-ledger",
@@ -557,7 +567,7 @@ export const SHIPPED: ShippedItem[] = [
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────
 
 export function daysSince(isoDate: string, today: Date = new Date()): number {
   const start = new Date(isoDate + "T00:00:00");
