@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Light-mode token defaults. Dark counterparts live in the media query
+ * below so the site automatically flips with the OS setting. A manual
+ * toggle can layer on top later by writing to :root variables directly. */
 @theme inline {
   --color-bg: #ffffff;
   --color-surface: #f5f5f5;
@@ -14,7 +17,37 @@
   --font-display: var(--font-space-grotesk);
 }
 
+/* Dark mode — automatic, follows the OS. Every Tailwind color class in
+ * the codebase (bg-bg, text-text, bg-card, text-mist, border-border,
+ * text-strava, etc.) resolves through these variables, so redefining
+ * them here flips the whole site with no per-component changes.
+ *
+ * Design notes:
+ *  - bg #0a0a0a instead of pure black — avoids OLED burn and reads softer.
+ *  - card slightly lighter than surface so hover states still separate.
+ *  - mist bumped to #a8a8a8 so secondary text keeps WCAG AA contrast on the
+ *    dark background (the light-mode #666 would fail on #0a0a0a).
+ *  - brand + strava lightened just enough to keep the orange snap while
+ *    holding contrast against the darker card and border.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0a0a0a;
+    --color-surface: #171717;
+    --color-card: #1c1c1c;
+    --color-text: #f5f5f5;
+    --color-mist: #a8a8a8;
+    --color-border: #2a2a2a;
+    --color-brand: #d97706;
+    --color-strava: #ff6a1f;
+  }
+}
+
 html {
+  /* Tells the browser to render its own UI (scrollbars, form controls,
+   * default focus rings) in the matching scheme so the site doesn't have
+   * a light scrollbar on a dark page. */
+  color-scheme: light dark;
   scroll-behavior: smooth;
 }
 

@@ -21,9 +21,20 @@ import { getAccessToken, getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
-import { getWeeklyRoundup, type WeeklyRoundup } from "@/lib/laura-roundup";
+import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
+
+// Aloha Gravel · Nov 7 2026. Homepage strip auto-hides after the event
+// date passes; safe to leave the reference for the following year's
+// event too — just bump the date when it's set.
+const ALOHA_GRAVEL_DATE = "2026-11-07";
+
+function daysUntilIso(iso: string): number {
+  const target = new Date(iso + "T00:00:00");
+  const now = new Date();
+  return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+}
 
 /**
  * Fetch ride descriptions for any Wall items that are by Vini. The Strava
@@ -107,7 +118,7 @@ async function fetchWallDescriptions(
 export const metadata: Metadata = {
   title: "Cycling Hawaii — A Strava club for cyclists in the islands",
   description:
-    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted weekly by Laura. Founded on Maui.",
+    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted every two weeks by Laura in The Dispatch. Founded on Maui.",
 };
 
 export const revalidate = 900;
@@ -194,11 +205,11 @@ export default async function Home() {
     ? computeHonorRoll(club.activities, club.members)
     : [];
 
-  // Laura's weekly roundup. Cached in Vercel Blob and regenerated only
-  // when older than ~7 days — so this call is usually a single blob
-  // read, no Claude API hit on most renders.
+  // The Dispatch — Laura's bi-weekly editorial. Cached in Vercel Blob
+  // and regenerated only when older than ~14 days, so this call is
+  // usually a single blob read, no Claude API hit on most renders.
   const roundup = club
-    ? await getWeeklyRoundup(club.activities, honorRoll).catch(() => null)
+    ? await getDispatch(club.activities, honorRoll).catch(() => null)
     : null;
 
   // Avatar lookup also serves the Honor Roll cards.
@@ -215,6 +226,7 @@ export default async function Home() {
   return (
     <main>
       <Hero />
+      <AlohaGravelStrip />
 
       {roster.length > 0 && club && (
         <Roster members={roster} activities={club.activities} />
@@ -222,7 +234,7 @@ export default async function Home() {
 
       <HonorRoll awards={honorRoll} profileByKey={profileByKey} />
 
-      {roundup && <LauraRoundup roundup={roundup} />}
+      {roundup && <LauraDispatch roundup={roundup} />}
 
       <QuotePullout />
 
@@ -260,7 +272,7 @@ export default async function Home() {
   );
 }
 
-// ─── helper: rank members for the Roster ─────────────────────────────
+// ─── helper: rank members for the Roster ─────────────────
 function buildRoster(club: ClubData, cap: number): ClubMember[] {
   // Tally miles per "First L." key from recent activities
   const milesByKey = new Map<string, number>();
@@ -289,7 +301,7 @@ function buildRoster(club: ClubData, cap: number): ClubMember[] {
   return ranked.slice(0, cap);
 }
 
-// ───────────────────── Hero ─────────────────────
+// ─────────────────── Hero ───────────────────
 function Hero() {
   return (
     <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
@@ -315,31 +327,97 @@ function Hero() {
             No team kit, no drop rides, no podiums — and the audacity to call
             it a club.
           </p>
-          <a
-            href="https://www.strava.com/clubs/cyclinghawaii"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
-          >
-            Join on Strava
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
+          <div className="flex flex-wrap items-center gap-4 md:gap-6">
+            <a
+              href="https://www.strava.com/clubs/cyclinghawaii"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
             >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
+              Join on Strava
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </a>
+
+            {/* Strava's official club-activity widget — a small trust badge
+                showing this week's rides / miles / hours / elevation for
+                club 737679. Sits next to the primary CTA so a visitor sees
+                "here's a real Strava club with real numbers" the moment
+                they land. Wrapped in a white card because the widget's own
+                styling assumes a light background; the wrapper keeps it
+                looking intentional in dark mode too. */}
+            <div className="rounded-2xl overflow-hidden bg-white shadow-md shrink-0">
+              <iframe
+                src="https://www.strava.com/clubs/737679/latest-rides/3693e9207d093a1577fbd442e4497c23c1f5a1b7?show_rides=false"
+                width="300"
+                height="160"
+                allowTransparency
+                frameBorder={0}
+                scrolling="no"
+                loading="lazy"
+                title="Cycling Hawaiʻi — this week on Strava"
+                className="block"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-// ────────────────── The Inner Circle ──────────────────
+// ─── Aloha Gravel countdown strip ──────────────────────
+// Sits right under the Hero as long as the event is in the future.
+// Auto-hides once the date has passed.
+function AlohaGravelStrip() {
+  const days = daysUntilIso(ALOHA_GRAVEL_DATE);
+  if (days < 0) return null;
+  const label =
+    days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+
+  return (
+    <section className="px-6 md:px-10 lg:px-16 pb-8 md:pb-10 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="bg-strava/8 border border-strava/25 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-strava">
+              Aloha Gravel · Nov 7
+            </div>
+            <span
+              className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                days <= 7
+                  ? "bg-strava text-white"
+                  : "bg-strava/15 text-strava"
+              }`}
+            >
+              {label}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0 text-mist text-xs md:text-sm">
+            Lap-based gravel on Maui. Ride as many 9-mile loops as your legs
+            allow. Fundraiser.
+          </div>
+          <Link
+            href="/events/aloha-gravel-2026"
+            className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap shrink-0"
+          >
+            Event details →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ──────────────── The Inner Circle ──────────────────
 function InnerCircle({
   members,
   activities,
@@ -639,7 +717,7 @@ function RiderAvatar({
   );
 }
 
-// ───────────────────── Wall ─────────────────────
+// ─────────────────── Wall ───────────────────
 function Wall({
   activities,
   avatarMap,
@@ -811,7 +889,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ──────────────────── Roster ────────────────────
+// ─────────────────── Roster ───────────────────
 function Roster({
   members,
   activities,
@@ -958,7 +1036,7 @@ function Conditions({ conditions }: { conditions: MauiConditions }) {
   );
 }
 
-// ──────────────────── Compass ───────────────────
+// ─────────────────── Compass ──────────────────
 function Compass({ club }: { club: ClubData }) {
   const { stats } = club;
   return (
@@ -1024,7 +1102,7 @@ function Compass({ club }: { club: ClubData }) {
   );
 }
 
-// ───────────────────── Call ─────────────────────
+// ─────────────────── Call ───────────────────
 function Call() {
   const month = new Date().toLocaleString("en-US", { month: "long" });
   return (
@@ -1059,7 +1137,7 @@ function Call() {
   );
 }
 
-// ───────────────────── Join ─────────────────────
+// ─────────────────── Join ───────────────────
 function Join({ variant }: { variant: "primary" | "secondary" }) {
   if (variant === "secondary") {
     return (
@@ -1129,7 +1207,7 @@ function Join({ variant }: { variant: "primary" | "secondary" }) {
   );
 }
 
-// ──────────────────── Honor Roll ────────────────
+// ────────────────── Honor Roll ──────────────
 //
 // Multi-axis distinctions that name riders for *who they are*, not where
 // they rank. Pure ranking is Strava's job. Cycling Hawai'i names you
@@ -1231,13 +1309,13 @@ function HonorCard({
   );
 }
 
-// ─────────────── Laura's weekly roundup ────────────
+// ─────────────── Laura's Dispatch ──────────────────
 //
 // Sits right under the Honor Roll. The point is to tie the awards
 // together in a single piece of prose that reads like a club bulletin
 // from a slightly tired but affectionate bookkeeper. Generation is
-// cached for ~7 days in Vercel Blob (see lib/laura-roundup.ts).
-function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
+// cached for ~14 days in Vercel Blob (see lib/laura-dispatch.ts).
+function LauraDispatch({ roundup }: { roundup: DispatchRoundup }) {
   const generated = new Date(roundup.generatedAt);
   const generatedStr = generated.toLocaleDateString("en-US", {
     month: "short",
@@ -1248,7 +1326,7 @@ function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
       <div className="max-w-[760px] mx-auto">
         <div className="text-center mb-10">
           <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            From Laura · This Week
+            From Laura · The Dispatch
           </div>
           <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
             {roundup.title}
@@ -1301,7 +1379,7 @@ function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
 // Three numbered cards, plain English, single big Strava CTA at the
 // bottom. We deliberately keep step 3 ("tag #cyclinghawaii") because
 // hashtag adoption is what makes the Wall, the Tagged Ride feed, and
-// Laura's weekly roundup feel populated by the community vs. by Vini.
+// Laura's Dispatch feel populated by the community vs. by Vini.
 function HowToJoin() {
   const steps = [
     {
@@ -1320,7 +1398,7 @@ function HowToJoin() {
       n: "03",
       title: "Tag it #cyclinghawaii",
       desc:
-        "Drop the hashtag in your activity description and Laura will find you in next week's roundup. Distinctions get awarded automatically.",
+        "Drop the hashtag in your activity description and Laura will find you in the next Dispatch. Distinctions get awarded automatically.",
     },
   ];
 
@@ -1418,7 +1496,7 @@ function QuotePullout() {
   );
 }
 
-// ─────────────── From the Rides ────────────────
+// ─────────────── From the Rides ──────────────
 //
 // Bridge to /rides — Vini's personal feed where Laura roasts every ride.
 // Shows the latest entry inline (excerpt of the body, link to the full

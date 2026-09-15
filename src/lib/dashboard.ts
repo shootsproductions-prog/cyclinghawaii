@@ -48,14 +48,14 @@ export interface ShippedItem {
   url?: string;
 }
 
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //  PROJECT START — used for "days since launch" calculation
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 export const PROJECT_START_DATE = "2026-04-08";
 
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //  STRATEGIC GOALS — top-level objectives
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 export const STRATEGIC_GOALS = [
   {
     id: "launch",
@@ -83,9 +83,9 @@ export const STRATEGIC_GOALS = [
   },
 ];
 
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //  ACTIVE & QUEUED INITIATIVES
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 export const INITIATIVES: Initiative[] = [
   // ── BLOCKED / WAITING ──
   {
@@ -254,11 +254,19 @@ export const INITIATIVES: Initiative[] = [
       "Helmet, lights, hydration, sunscreen, anti-chafe, cycling cap. Lower priority than launch — better to ship 7 great reviews than 14 thin ones.",
     estimateDays: 0.5,
   },
+  {
+    id: "app-for-fun",
+    title: "Cycling Hawaiʻi app (exploratory)",
+    status: "queued",
+    category: "Platform",
+    detail:
+      "Vini's for-fun idea, scope TBD. Options: (a) iOS-first native, (b) PWA wrapping the current site, (c) React Native cross-platform. Likely candidates for features: live club feed, Honor Roll notifications, roast-me-now button, tap-to-log. No timeline; parked so it doesn't get forgotten. Confirm scope + platform before spending real effort.",
+  },
 ];
 
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //  CALENDAR — upcoming dates
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 export const MILESTONES: Milestone[] = [
   {
     id: "strava-followup",
@@ -359,9 +367,9 @@ export const MILESTONES: Milestone[] = [
   },
 ];
 
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //  RECENTLY SHIPPED — newest first
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 export const SHIPPED: ShippedItem[] = [
   {
     id: "drive-cleanup",
@@ -540,7 +548,6 @@ export const SHIPPED: ShippedItem[] = [
     title: "/club — Manifesto, Roster, Wall, Conditions, peloton roles",
     category: "Community",
     date: "2026-04-26",
-    url: "/club",
   },
   {
     id: "stats-ledger",
@@ -557,7 +564,7 @@ export const SHIPPED: ShippedItem[] = [
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────
 
 export function daysSince(isoDate: string, today: Date = new Date()): number {
   const start = new Date(isoDate + "T00:00:00");
