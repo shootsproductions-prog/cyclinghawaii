@@ -17,10 +17,14 @@
   --font-display: var(--font-space-grotesk);
 }
 
-/* Dark mode — automatic, follows the OS. Every Tailwind color class in
- * the codebase (bg-bg, text-text, bg-card, text-mist, border-border,
- * text-strava, etc.) resolves through these variables, so redefining
- * them here flips the whole site with no per-component changes.
+/* Dark mode. Two paths lead here:
+ *   1. OS is dark AND the user hasn't explicitly picked light — the media
+ *      query below applies, gated on `:root:not([data-theme="light"])`.
+ *   2. The user clicked the toggle to dark — `:root[data-theme="dark"]`
+ *      applies unconditionally and wins over the media query.
+ * Same token values in both — duplicated for clarity, not shared through
+ * a mixin, because CSS doesn't have one and a variable-of-variables
+ * trick would obscure the intent.
  *
  * Design notes:
  *  - bg #0a0a0a instead of pure black — avoids OLED burn and reads softer.
@@ -31,7 +35,7 @@
  *    holding contrast against the darker card and border.
  */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg: #0a0a0a;
     --color-surface: #171717;
     --color-card: #1c1c1c;
@@ -41,6 +45,17 @@
     --color-brand: #d97706;
     --color-strava: #ff6a1f;
   }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-surface: #171717;
+  --color-card: #1c1c1c;
+  --color-text: #f5f5f5;
+  --color-mist: #a8a8a8;
+  --color-border: #2a2a2a;
+  --color-brand: #d97706;
+  --color-strava: #ff6a1f;
 }
 
 html {

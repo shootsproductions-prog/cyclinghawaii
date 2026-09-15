@@ -57,13 +57,24 @@ export const metadata: Metadata = {
   },
 };
 
+// Runs synchronously in <head> before <body> paints. Reads the saved
+// theme choice and stamps it on <html> as `data-theme`, which the
+// selectors in globals.css use to override the prefers-color-scheme
+// default. No flash: the token values are set before first paint.
+// Wrapped in try/catch because localStorage can throw in private mode
+// and we'd rather fall back to the OS setting than crash the page.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} style={{ backgroundColor: "#ffffff" }}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
         <Nav slot={<NavAuth />} />
         {children}
