@@ -3,7 +3,11 @@ import { getAccessToken } from "./strava";
 import { metersToFeet, metersToMiles } from "./formatters";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
-const CLUB_ID = process.env.STRAVA_CLUB_ID || "cyclinghawaii";
+// Numeric club ID for Cycling Hawaiʻi on Strava
+// (https://www.strava.com/clubs/737679). Numeric IDs are permanent;
+// slugs can change, so we default to the number. STRAVA_CLUB_ID env
+// var still wins if set — useful for testing against another club.
+const CLUB_ID = process.env.STRAVA_CLUB_ID || "737679";
 
 export interface ClubInfo {
   id: number;
