@@ -21,7 +21,7 @@ import { getAccessToken, getStravaData } from "@/lib/strava";
 import { generateBlogEntries } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
-import { getWeeklyRoundup, type WeeklyRoundup } from "@/lib/laura-roundup";
+import { getFortnightRoundup, type FortnightRoundup } from "@/lib/laura-fortnight";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
@@ -107,7 +107,7 @@ async function fetchWallDescriptions(
 export const metadata: Metadata = {
   title: "Cycling Hawaii — A Strava club for cyclists in the islands",
   description:
-    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted weekly by Laura. Founded on Maui.",
+    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted every fortnight by Laura. Founded on Maui.",
 };
 
 export const revalidate = 900;
@@ -194,11 +194,11 @@ export default async function Home() {
     ? computeHonorRoll(club.activities, club.members)
     : [];
 
-  // Laura's weekly roundup. Cached in Vercel Blob and regenerated only
+  // Laura's fortnightly roundup. Cached in Vercel Blob and regenerated only
   // when older than ~7 days — so this call is usually a single blob
   // read, no Claude API hit on most renders.
   const roundup = club
-    ? await getWeeklyRoundup(club.activities, honorRoll).catch(() => null)
+    ? await getFortnightRoundup(club.activities, honorRoll).catch(() => null)
     : null;
 
   // Avatar lookup also serves the Honor Roll cards.
@@ -260,7 +260,7 @@ export default async function Home() {
   );
 }
 
-// ─── helper: rank members for the Roster ─────────────────────────────
+// ─── helper: rank members for the Roster ─────────────────────
 function buildRoster(club: ClubData, cap: number): ClubMember[] {
   // Tally miles per "First L." key from recent activities
   const milesByKey = new Map<string, number>();
@@ -289,7 +289,7 @@ function buildRoster(club: ClubData, cap: number): ClubMember[] {
   return ranked.slice(0, cap);
 }
 
-// ───────────────────── Hero ─────────────────────
+// ─────────────────── Hero ───────────────────
 function Hero() {
   return (
     <section className="pt-24 md:pt-28 pb-12 md:pb-16 px-6 md:px-10 lg:px-16 bg-bg">
@@ -339,7 +339,7 @@ function Hero() {
   );
 }
 
-// ────────────────── The Inner Circle ──────────────────
+// ──────────────── The Inner Circle ──────────────────
 function InnerCircle({
   members,
   activities,
@@ -639,7 +639,7 @@ function RiderAvatar({
   );
 }
 
-// ───────────────────── Wall ─────────────────────
+// ─────────────────── Wall ───────────────────
 function Wall({
   activities,
   avatarMap,
@@ -811,7 +811,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ──────────────────── Roster ────────────────────
+// ─────────────────── Roster ───────────────────
 function Roster({
   members,
   activities,
@@ -958,7 +958,7 @@ function Conditions({ conditions }: { conditions: MauiConditions }) {
   );
 }
 
-// ──────────────────── Compass ───────────────────
+// ─────────────────── Compass ──────────────────
 function Compass({ club }: { club: ClubData }) {
   const { stats } = club;
   return (
@@ -1024,7 +1024,7 @@ function Compass({ club }: { club: ClubData }) {
   );
 }
 
-// ───────────────────── Call ─────────────────────
+// ─────────────────── Call ───────────────────
 function Call() {
   const month = new Date().toLocaleString("en-US", { month: "long" });
   return (
@@ -1059,7 +1059,7 @@ function Call() {
   );
 }
 
-// ───────────────────── Join ─────────────────────
+// ─────────────────── Join ───────────────────
 function Join({ variant }: { variant: "primary" | "secondary" }) {
   if (variant === "secondary") {
     return (
@@ -1129,7 +1129,7 @@ function Join({ variant }: { variant: "primary" | "secondary" }) {
   );
 }
 
-// ──────────────────── Honor Roll ────────────────
+// ────────────────── Honor Roll ──────────────
 //
 // Multi-axis distinctions that name riders for *who they are*, not where
 // they rank. Pure ranking is Strava's job. Cycling Hawai'i names you
@@ -1231,13 +1231,13 @@ function HonorCard({
   );
 }
 
-// ─────────────── Laura's weekly roundup ────────────
+// ─────────────── Laura's fortnightly roundup ──────
 //
 // Sits right under the Honor Roll. The point is to tie the awards
 // together in a single piece of prose that reads like a club bulletin
 // from a slightly tired but affectionate bookkeeper. Generation is
-// cached for ~7 days in Vercel Blob (see lib/laura-roundup.ts).
-function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
+// cached for ~14 days in Vercel Blob (see lib/laura-fortnight.ts).
+function LauraRoundup({ roundup }: { roundup: FortnightRoundup }) {
   const generated = new Date(roundup.generatedAt);
   const generatedStr = generated.toLocaleDateString("en-US", {
     month: "short",
@@ -1248,7 +1248,7 @@ function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
       <div className="max-w-[760px] mx-auto">
         <div className="text-center mb-10">
           <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            From Laura · This Week
+            From Laura · The Fortnight
           </div>
           <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
             {roundup.title}
@@ -1301,7 +1301,7 @@ function LauraRoundup({ roundup }: { roundup: WeeklyRoundup }) {
 // Three numbered cards, plain English, single big Strava CTA at the
 // bottom. We deliberately keep step 3 ("tag #cyclinghawaii") because
 // hashtag adoption is what makes the Wall, the Tagged Ride feed, and
-// Laura's weekly roundup feel populated by the community vs. by Vini.
+// Laura's fortnightly roundup feel populated by the community vs. by Vini.
 function HowToJoin() {
   const steps = [
     {
@@ -1320,7 +1320,7 @@ function HowToJoin() {
       n: "03",
       title: "Tag it #cyclinghawaii",
       desc:
-        "Drop the hashtag in your activity description and Laura will find you in next week's roundup. Distinctions get awarded automatically.",
+        "Drop the hashtag in your activity description and Laura will find you in the next fortnightly roundup. Distinctions get awarded automatically.",
     },
   ];
 
@@ -1418,7 +1418,7 @@ function QuotePullout() {
   );
 }
 
-// ─────────────── From the Rides ────────────────
+// ─────────────── From the Rides ──────────────
 //
 // Bridge to /rides — Vini's personal feed where Laura roasts every ride.
 // Shows the latest entry inline (excerpt of the body, link to the full
