@@ -226,7 +226,8 @@ export default async function Home() {
   return (
     <main>
       <Hero />
-      <AlohaGravelStrip />
+      {club && <ClubSnapshot club={club} />}
+      <AlohaGravelHero />
 
       {roster.length > 0 && club && (
         <Roster members={roster} activities={club.activities} />
@@ -327,90 +328,188 @@ function Hero() {
             No team kit, no drop rides, no podiums — and the audacity to call
             it a club.
           </p>
-          <div className="flex flex-wrap items-center gap-4 md:gap-6">
-            <a
-              href="https://www.strava.com/clubs/cyclinghawaii"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
+          {/* Single primary CTA. The Strava widget that used to sit here
+              moved out because ClubSnapshot (rendered right below the
+              Hero) shows the same data richer and on-brand — the widget
+              was doing duplicate work with worse typography. */}
+          <a
+            href="https://www.strava.com/clubs/737679"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
+          >
+            Join on Strava
+            <svg
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              viewBox="0 0 24 24"
             >
-              Join on Strava
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </a>
-
-            {/* Strava's official club-activity widget — a small trust badge
-                showing this week's rides / miles / hours / elevation for
-                club 737679. Sits next to the primary CTA so a visitor sees
-                "here's a real Strava club with real numbers" the moment
-                they land. Wrapped in a white card because the widget's own
-                styling assumes a light background; the wrapper keeps it
-                looking intentional in dark mode too. */}
-            <div className="rounded-2xl overflow-hidden bg-white shadow-md shrink-0">
-              <iframe
-                src="https://www.strava.com/clubs/737679/latest-rides/3693e9207d093a1577fbd442e4497c23c1f5a1b7?show_rides=false"
-                width="300"
-                height="160"
-                allowTransparency
-                frameBorder={0}
-                scrolling="no"
-                loading="lazy"
-                title="Cycling Hawaiʻi — this week on Strava"
-                className="block"
-              />
-            </div>
-          </div>
+              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
         </div>
       </div>
     </section>
   );
 }
 
-// ─── Aloha Gravel countdown strip ──────────────────────
-// Sits right under the Hero as long as the event is in the future.
-// Auto-hides once the date has passed.
-function AlohaGravelStrip() {
-  const days = daysUntilIso(ALOHA_GRAVEL_DATE);
-  if (days < 0) return null;
-  const label =
-    days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
-
+// ─── Club Snapshot ─────────────────────────────────────
+// Sits right under the Hero. Answers "what is this?" in five seconds
+// with real numbers from the Strava API: member count + aggregate of
+// the last ~30 rides in the club feed + the current top rider.
+//
+// Strava's public API doesn't expose their internal weekly leaderboard,
+// so the numbers here are "recent" (feed window) rather than
+// "this week" — that's the honest framing we use in the label under
+// the tiles so we're not overclaiming.
+function ClubSnapshot({ club }: { club: ClubData }) {
+  const nf = new Intl.NumberFormat("en-US");
   return (
-    <section className="px-6 md:px-10 lg:px-16 pb-8 md:pb-10 bg-bg">
+    <section className="px-6 md:px-10 lg:px-16 pb-8 md:pb-12 bg-bg">
       <div className="max-w-[1280px] mx-auto">
-        <div className="bg-strava/8 border border-strava/25 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-strava">
-              Aloha Gravel · Nov 7
-            </div>
-            <span
-              className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                days <= 7
-                  ? "bg-strava text-white"
-                  : "bg-strava/15 text-strava"
-              }`}
-            >
-              {label}
+        <div className="mb-5 md:mb-6 flex items-baseline justify-between gap-4 flex-wrap">
+          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-strava">
+            The club, live from Strava
+          </div>
+          <div className="text-[0.65rem] font-medium tracking-widest uppercase text-mist/70">
+            Last 30 rides · Refreshes every 15 min
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <StatTile label="Members" value={nf.format(club.info.member_count)} />
+          <StatTile label="Recent rides" value={nf.format(club.stats.totalRides)} />
+          <StatTile label="Miles" value={nf.format(club.stats.totalMiles)} />
+          <StatTile
+            label="Feet climbed"
+            value={nf.format(club.stats.totalElevationFt)}
+          />
+        </div>
+
+        {club.stats.topMember && (
+          <div className="mt-5 md:mt-6 flex items-center gap-3 text-sm text-mist">
+            <span className="inline-block w-2 h-2 rounded-full bg-strava animate-pulse" />
+            <span>
+              Currently leading:{" "}
+              <span className="text-text font-semibold">
+                {club.stats.topMember}
+              </span>
             </span>
           </div>
-          <div className="flex-1 min-w-0 text-mist text-xs md:text-sm">
-            Lap-based gravel on Maui. Ride as many 9-mile loops as your legs
-            allow. Fundraiser.
+        )}
+      </div>
+    </section>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card px-4 py-5 md:px-5 md:py-6">
+      <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text leading-none">
+        {value}
+      </div>
+      <div className="mt-2 text-[0.65rem] md:text-xs font-semibold uppercase tracking-widest text-mist">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// ─── Aloha Gravel announcement ─────────────────────────
+// Full-section hero for the Nov 7 event. Auto-hides once the date
+// passes. Big date, description, register CTA (movemint) + info CTA
+// (alohagravel.com). Countdown badge changes color inside 7 days out.
+function AlohaGravelHero() {
+  const days = daysUntilIso(ALOHA_GRAVEL_DATE);
+  if (days < 0) return null;
+  const countdown =
+    days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+  const urgent = days <= 7;
+
+  return (
+    <section className="px-6 md:px-10 lg:px-16 pb-16 md:pb-20 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="relative overflow-hidden rounded-3xl border border-strava/30 bg-gradient-to-br from-strava/10 via-strava/5 to-transparent p-6 md:p-10 lg:p-12">
+          {/* Decorative sun-flare in the corner — pure CSS, no asset */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-strava/20 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-brand/15 blur-3xl"
+          />
+
+          <div className="relative grid grid-cols-1 md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center">
+            {/* Date stamp */}
+            <div className="text-center md:text-left">
+              <div className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-strava mb-1">
+                Nov
+              </div>
+              <div className="font-[family-name:var(--font-space-grotesk)] text-7xl md:text-8xl font-bold tracking-tighter text-text leading-none">
+                07
+              </div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-mist mt-1">
+                2026 · Maui
+              </div>
+            </div>
+
+            {/* Body */}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-strava">
+                  The event
+                </span>
+                <span
+                  className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    urgent
+                      ? "bg-strava text-white"
+                      : "bg-strava/15 text-strava"
+                  }`}
+                >
+                  {countdown}
+                </span>
+              </div>
+              <h2 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl font-bold tracking-tight text-text leading-[1.02] mb-4">
+                Aloha<span className="text-strava"> Gravel.</span>
+              </h2>
+              <p className="text-mist text-base md:text-lg leading-relaxed max-w-[560px] mb-6">
+                Lap-based gravel on Maui. Ride as many 9-mile loops as your
+                legs allow. Fundraiser, no drop, all welcome.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                <a
+                  href="https://www.movemint.cc/events/aloha_gravel_2026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
+                >
+                  Register
+                  <svg
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </a>
+                <a
+                  href="https://alohagravel.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-strava/40 text-strava font-semibold text-sm uppercase tracking-wider hover:bg-strava/10 transition-colors"
+                >
+                  Full event info
+                </a>
+              </div>
+            </div>
           </div>
-          <Link
-            href="/events/aloha-gravel-2026"
-            className="text-strava text-xs md:text-sm font-semibold uppercase tracking-wider hover:text-strava/80 no-underline whitespace-nowrap shrink-0"
-          >
-            Event details →
-          </Link>
         </div>
       </div>
     </section>
