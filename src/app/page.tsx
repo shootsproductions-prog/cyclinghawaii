@@ -7,7 +7,10 @@ import {
   type ClubActivity,
   type ClubData,
 } from "@/lib/club";
-import { getMauiConditions, type MauiConditions } from "@/lib/conditions";
+import {
+  getAllIslandConditions,
+  type IslandConditions,
+} from "@/lib/conditions";
 import {
   rosterLinesFor,
   safeInitial,
@@ -133,9 +136,9 @@ export default async function Home() {
   //   - Up to 3 published merch products for the Merch teaser
   // Each fetch is independently cached; failures degrade gracefully (a
   // section just doesn't render if its data is missing).
-  const [club, conditions, stravaData, merchProducts] = await Promise.all([
+  const [club, islandConditions, stravaData, merchProducts] = await Promise.all([
     getClubData(),
-    getMauiConditions(),
+    getAllIslandConditions(),
     getStravaData().catch(() => null),
     getPublishedProducts().catch(() => [] as StoreProduct[]),
   ]);
@@ -187,9 +190,6 @@ export default async function Home() {
     }
   }
 
-  // Conditions is no longer rendered on /club — kept as a possible
-  // widget for elsewhere if we ever want it back.
-  void conditions;
 
   // Pull descriptions for Wall items that are by Vini. Other riders'
   // descriptions aren't fetchable via the Strava API until they connect
@@ -226,6 +226,9 @@ export default async function Home() {
   return (
     <main>
       <Hero />
+      {islandConditions.length > 0 && (
+        <RideToday conditions={islandConditions} />
+      )}
       {club && <ClubSnapshot club={club} />}
       <AlohaGravelHero />
 
@@ -422,6 +425,96 @@ function ClubSnapshot({ club }: { club: ClubData }) {
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── Ride Today ────────────────────────────────────────
+// The top-of-page decision panel. For each of the four main islands
+// we surface temp, wind (with a rotating arrow), sky, and a single
+// Laura-voice line telling you what to do about it. Free Open-Meteo
+// data, 30-min ISR, no API key. Individual island failures degrade
+// gracefully; a card only renders if we got a real reading.
+//
+// This exists because the #1 question a Hawai'i cyclist has each
+// morning is "should I ride today, and where?" — and no other cycling
+// site answers it across all four islands in one glance.
+function RideToday({ conditions }: { conditions: IslandConditions[] }) {
+  return (
+    <section className="px-6 md:px-10 lg:px-16 pt-2 pb-8 md:pb-12 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="mb-5 md:mb-6 flex items-baseline justify-between gap-4 flex-wrap">
+          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-strava">
+            Ride today
+          </div>
+          <div className="text-[0.65rem] font-medium tracking-widest uppercase text-mist/70">
+            Conditions across the islands · Refreshes every 30 min
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {conditions.map((c) => (
+            <IslandCard key={c.island} conditions={c} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IslandCard({ conditions }: { conditions: IslandConditions }) {
+  const c = conditions;
+  // The wind arrow points in the direction the wind is going TOWARD (i.e.
+  // downwind), which is what a rider cares about: the arrow tells you
+  // where a tailwind would take you. Open-Meteo returns the direction
+  // wind is coming FROM, so we add 180°.
+  const arrowRotation = (c.windDeg + 180) % 360;
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 md:p-5 flex flex-col">
+      <div className="flex items-baseline justify-between mb-3">
+        <div className="text-[0.65rem] md:text-xs font-bold uppercase tracking-widest text-text">
+          {c.label}
+        </div>
+        <div className="text-[0.6rem] uppercase tracking-widest text-mist">
+          {c.hub}
+        </div>
+      </div>
+
+      <div className="flex items-baseline gap-3 mb-2">
+        <div className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold text-text leading-none">
+          {c.tempF}
+          <span className="text-2xl md:text-3xl text-mist">°</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-strava"
+            style={{ transform: `rotate(${arrowRotation}deg)` }}
+            aria-hidden
+          >
+            <path d="M12 5v14M5 12l7 7 7-7" />
+          </svg>
+          <div className="text-xs md:text-sm text-text font-semibold">
+            {c.windMph}
+            <span className="text-mist font-normal"> mph {c.windDir}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-xs text-mist mb-3">{c.weatherText}</div>
+
+      <div className="mt-auto pt-3 border-t border-border">
+        <p className="text-xs md:text-sm text-text italic leading-snug">
+          {c.prescription}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -1065,77 +1158,6 @@ function Roster({
               </div>
             );
           })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ────────────────── Conditions ──────────────────
-function Conditions({ conditions }: { conditions: MauiConditions }) {
-  return (
-    <section className="py-20 px-6 bg-surface">
-      <div className="max-w-[800px] mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            Conditions
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-2">
-            Maui, right now
-          </h2>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
-          <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-            <div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
-                {conditions.tempF}°
-              </div>
-              <div className="text-[0.65rem] uppercase tracking-widest text-mist mt-1">
-                Temp
-              </div>
-            </div>
-            <div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
-                {conditions.windMph}
-                <span className="text-lg text-mist"> mph</span>
-              </div>
-              <div className="text-[0.65rem] uppercase tracking-widest text-mist mt-1">
-                Wind {conditions.windDir}
-              </div>
-            </div>
-            <div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-base md:text-lg font-semibold text-text leading-tight pt-2">
-                {conditions.weatherText}
-              </div>
-              <div className="text-[0.65rem] uppercase tracking-widest text-mist mt-1">
-                Sky
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-5 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-strava/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                stroke="#fc5200"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-strava uppercase tracking-wider mb-1">
-                Laura&apos;s Read
-              </div>
-              <p className="text-mist text-sm italic leading-relaxed">
-                {conditions.prescription}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
