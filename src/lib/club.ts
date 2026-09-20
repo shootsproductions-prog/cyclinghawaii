@@ -83,11 +83,31 @@ export const getClubData = cache(async (): Promise<ClubData | null> => {
       return null;
     }
 
+    // Log status + shape so Vercel Function logs make it obvious when
+    // Strava returns a 4xx (usually a scope/permissions issue on the
+    // members and activities endpoints) versus a legitimately-empty
+    // window. The Snapshot on the homepage can't distinguish "quiet
+    // week" from "auth denied" without this.
+    if (!membersRes.ok) {
+      console.error(
+        `Club members fetch failed: ${membersRes.status} ${membersRes.statusText}`
+      );
+    }
+    if (!activitiesRes.ok) {
+      console.error(
+        `Club activities fetch failed: ${activitiesRes.status} ${activitiesRes.statusText}`
+      );
+    }
+
     const info: ClubInfo = await infoRes.json();
     const members: ClubMember[] = membersRes.ok ? await membersRes.json() : [];
     const activities: ClubActivity[] = activitiesRes.ok
       ? await activitiesRes.json()
       : [];
+
+    console.log(
+      `[club] fetched members=${members.length} activities=${activities.length} (member_count from info=${info.member_count})`
+    );
 
     // Any Strava activity whose type or sport_type contains "Ride" counts:
     // Ride, GravelRide, MountainBikeRide, EBikeRide, VirtualRide,
