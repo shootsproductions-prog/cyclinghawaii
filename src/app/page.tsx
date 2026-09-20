@@ -375,7 +375,7 @@ function ClubSnapshot({ club }: { club: ClubData }) {
             The club, live from Strava
           </div>
           <div className="text-[0.65rem] font-medium tracking-widest uppercase text-mist/70">
-            Last 30 rides · Refreshes every 15 min
+            Recent rides · Refreshes every 15 min
           </div>
         </div>
 

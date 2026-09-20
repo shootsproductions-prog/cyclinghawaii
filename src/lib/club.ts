@@ -68,8 +68,12 @@ export const getClubData = cache(async (): Promise<ClubData | null> => {
     const [infoRes, membersRes, activitiesRes] = await Promise.all([
       fetch(`${STRAVA_API_BASE}/clubs/${CLUB_ID}`, opts),
       fetch(`${STRAVA_API_BASE}/clubs/${CLUB_ID}/members?per_page=100`, opts),
+      // per_page bumped from 30 to 200 (the Strava API max) so aggregate
+      // stats on the homepage reflect a real slice of activity, not the
+      // last week or two. For a small-to-medium club this reaches back
+      // 1–3 months — enough to show meaningful totals without staleness.
       fetch(
-        `${STRAVA_API_BASE}/clubs/${CLUB_ID}/activities?per_page=30`,
+        `${STRAVA_API_BASE}/clubs/${CLUB_ID}/activities?per_page=200`,
         opts
       ),
     ]);
@@ -85,9 +89,14 @@ export const getClubData = cache(async (): Promise<ClubData | null> => {
       ? await activitiesRes.json()
       : [];
 
-    const rides = activities.filter(
-      (a) => a.type === "Ride" || a.sport_type === "Ride"
-    );
+    // Any Strava activity whose type or sport_type contains "Ride" counts:
+    // Ride, GravelRide, MountainBikeRide, EBikeRide, VirtualRide,
+    // EMountainBikeRide, Handcycle-adjacent variants. For a gravel-heavy
+    // Hawai'i club, the old strict "Ride"-only filter dropped most rides
+    // on the floor and made the homepage totals look zero'd.
+    const isRideish = (a: ClubActivity) =>
+      (a.sport_type || a.type || "").toLowerCase().includes("ride");
+    const rides = activities.filter(isRideish);
 
     const totalMiles = Math.round(
       rides.reduce((sum, a) => sum + metersToMiles(a.distance), 0)
