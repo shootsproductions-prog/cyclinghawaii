@@ -68,12 +68,12 @@ export const getClubData = cache(async (): Promise<ClubData | null> => {
     const [infoRes, membersRes, activitiesRes] = await Promise.all([
       fetch(`${STRAVA_API_BASE}/clubs/${CLUB_ID}`, opts),
       fetch(`${STRAVA_API_BASE}/clubs/${CLUB_ID}/members?per_page=100`, opts),
-      // per_page bumped from 30 to 200 (the Strava API max) so aggregate
-      // stats on the homepage reflect a real slice of activity, not the
-      // last week or two. For a small-to-medium club this reaches back
-      // 1–3 months — enough to show meaningful totals without staleness.
+      // Back to per_page=30, the Strava default. per_page=200 caused this
+      // endpoint to return 404 (Strava rejects out-of-range params with
+      // 404, not 400). If the endpoint still 404s at 30 it's a real API
+      // deprecation, not a param issue, and we pivot away from the API.
       fetch(
-        `${STRAVA_API_BASE}/clubs/${CLUB_ID}/activities?per_page=200`,
+        `${STRAVA_API_BASE}/clubs/${CLUB_ID}/activities?per_page=30`,
         opts
       ),
     ]);
