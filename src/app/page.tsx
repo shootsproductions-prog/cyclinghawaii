@@ -21,7 +21,7 @@ import {
 } from "@/lib/laura-club";
 import { assignRoles } from "@/lib/peloton-roles";
 import { getAccessToken, getStravaData } from "@/lib/strava";
-import { generateBlogEntries } from "@/lib/blog";
+import { generateBlogEntries, type BlogEntry } from "@/lib/blog";
 import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
 import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
 import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
@@ -143,20 +143,24 @@ export default async function Home() {
     getPublishedProducts().catch(() => [] as StoreProduct[]),
   ]);
 
-  // Latest Vini ride + Laura roast preview for the "From the Rides" section.
-  // generateBlogEntries reads the recent rides and reconciles with cached
-  // entries — it returns the canonical entry list if present.
+  // Blog entries — one per Vini ride, each with Laura's roast. Reconciles
+  // the Strava feed with any cached entries in Vercel Blob, generating any
+  // missing ones on demand. We keep the full list in scope so the homepage
+  // RideFeed can render N most recent, not just the latest.
+  let blogEntries: BlogEntry[] = [];
   let latestRoast: { title: string; body: string; rideId?: number } | null =
     null;
   let latestRideName: string | null = null;
   if (stravaData?.featured) {
     latestRideName = stravaData.featured.name ?? null;
     try {
-      const entries = await generateBlogEntries(
+      blogEntries = await generateBlogEntries(
         stravaData.featured,
         stravaData.rides
       );
-      const entry = entries.find((e) => e.rideId === stravaData.featured.id);
+      const entry = blogEntries.find(
+        (e) => e.rideId === stravaData.featured.id
+      );
       if (entry) {
         latestRoast = {
           title: entry.title,
@@ -165,7 +169,7 @@ export default async function Home() {
         };
       }
     } catch {
-      // Roast unavailable — From the Rides falls back to a link-only card.
+      // Roast unavailable — RideFeed will hide if blogEntries stays empty.
     }
   }
 
@@ -229,12 +233,10 @@ export default async function Home() {
       {islandConditions.length > 0 && (
         <RideToday conditions={islandConditions} />
       )}
-      {/* ClubSnapshot removed in the Oct 2026 pivot — the site is a solo
-          cycling journal now, not a club platform. Component code is kept
-          in-file for one commit so the diff is reviewable; it comes out
-          in commit 3 along with the Roster / Honor Roll / Inner Circle /
-          Wall and the /club route. */}
       <AlohaGravelHero />
+      {blogEntries.length > 0 && (
+        <RideFeed entries={blogEntries.slice(0, 6)} />
+      )}
 
       {roster.length > 0 && club && (
         <Roster members={roster} activities={club.activities} />
@@ -264,10 +266,11 @@ export default async function Home() {
 
       <HowToJoin />
 
-      <FromTheRides
-        rideName={latestRideName}
-        roast={latestRoast}
-      />
+      {/* FromTheRides was a single-card teaser pointing at /rides. Dropped
+          in the Oct 2026 pivot — the new RideFeed above the fold shows 6
+          rides directly, so a single-ride teaser down here is redundant.
+          latestRoast / latestRideName are still computed because
+          generateBlogEntries runs for the whole feed anyway. */}
 
       {merchProducts.length > 0 && <MerchTeaser products={merchProducts} />}
 
@@ -617,6 +620,123 @@ function AlohaGravelHero() {
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── The Feed (ride cards) ─────────────────────────────
+// Vini's recent rides as a scannable card grid. Each card is a condensed
+// view of a Laura-written blog entry — title, 2-line preview, date and
+// key stats, and a thumbnail (ride photo if Strava has one, else the map
+// polyline SVG we build from the ride's track).
+//
+// This is the beating heart of the solo-journal pivot: the homepage used
+// to show a Roster of club members here, which is dead until per-member
+// Strava access returns. Now it shows what Vini actually did, with
+// Laura's voice on top.
+function RideFeed({ entries }: { entries: BlogEntry[] }) {
+  return (
+    <section className="py-16 md:py-20 px-6 md:px-10 lg:px-16 bg-bg border-t border-border">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="mb-10 md:mb-12 flex items-baseline justify-between gap-4 flex-wrap">
+          <div>
+            <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-strava mb-2">
+              The Feed
+            </div>
+            <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text">
+              Latest rides, roasted.
+            </h2>
+          </div>
+          <Link
+            href="/rides"
+            className="text-xs md:text-sm font-semibold text-strava hover:text-strava/80 uppercase tracking-wider no-underline whitespace-nowrap"
+          >
+            See every ride →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+          {entries.map((e) => (
+            <FeedCard key={e.rideId} entry={e} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeedCard({ entry }: { entry: BlogEntry }) {
+  // Preview: first paragraph, trimmed to ~160 chars without breaking a word.
+  const firstPara = entry.body.split(/\n\n/)[0] ?? entry.body;
+  const preview =
+    firstPara.length > 170
+      ? firstPara.slice(0, 167).replace(/\s+\S*$/, "") + "…"
+      : firstPara;
+
+  // Prefer a real ride photo; fall back to the map polyline rendered as
+  // SVG. mapImageUrl is always populated (even if just the gray SVG
+  // placeholder) so there's always something visual.
+  const heroImage = entry.photoUrl || entry.mapImageUrl;
+
+  return (
+    <Link
+      href={`/rides#${entry.rideId}`}
+      className="group flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow no-underline"
+    >
+      {heroImage && (
+        <div className="relative aspect-[16/9] bg-surface overflow-hidden">
+          {/* Using <img> instead of next/image because mapImageUrl is a
+              data: URI SVG for most rides (no polyline host to configure
+              for next/image), and photoUrl is a Strava CDN URL that
+              rotates — not worth the next.config remotePatterns churn. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage}
+            alt={entry.rideName}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      <div className="flex-1 p-5 md:p-6 flex flex-col">
+        <div className="flex items-center gap-3 mb-3 text-[0.6rem] uppercase tracking-widest text-mist font-semibold">
+          <span>{entry.date}</span>
+          <span className="opacity-50">·</span>
+          <span>{entry.distance} mi</span>
+          <span className="opacity-50">·</span>
+          <span>{entry.elevation} ft</span>
+        </div>
+
+        <h3 className="font-[family-name:var(--font-space-grotesk)] text-lg md:text-xl font-bold text-text leading-tight mb-2 group-hover:text-strava transition-colors">
+          {entry.title}
+        </h3>
+
+        <div className="text-[0.65rem] uppercase tracking-widest text-mist/80 mb-3 truncate">
+          {entry.rideName}
+        </div>
+
+        {preview && (
+          <p className="text-mist text-sm leading-relaxed italic flex-1">
+            {preview}
+          </p>
+        )}
+
+        <div className="mt-4 pt-4 border-t border-border text-xs font-semibold uppercase tracking-wider text-strava inline-flex items-center gap-2">
+          Read Laura's roast
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            viewBox="0 0 24 24"
+            className="group-hover:translate-x-0.5 transition-transform"
+          >
+            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </div>
+      </div>
+    </Link>
   );
 }
 
