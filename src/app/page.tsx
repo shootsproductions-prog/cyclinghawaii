@@ -1,36 +1,18 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  getClubData,
-  type ClubMember,
-  type ClubActivity,
-  type ClubData,
-} from "@/lib/club";
+import { getClubData } from "@/lib/club";
 import {
   getAllIslandConditions,
   type IslandConditions,
 } from "@/lib/conditions";
-import {
-  rosterLinesFor,
-  safeInitial,
-  isTagged,
-  sportTypeColor,
-  milesCompare,
-  elevationCompare,
-} from "@/lib/laura-club";
-import { assignRoles } from "@/lib/peloton-roles";
-import { getAccessToken, getStravaData } from "@/lib/strava";
+import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries, type BlogEntry } from "@/lib/blog";
-import { getPublishedProducts, formatPrice, type StoreProduct } from "@/lib/products";
-import { computeHonorRoll, type AwardedDistinction } from "@/lib/honor-roll";
+import { computeHonorRoll } from "@/lib/honor-roll";
 import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
 
-const STRAVA_API_BASE = "https://www.strava.com/api/v3";
-
-// Aloha Gravel · Nov 7 2026. Homepage strip auto-hides after the event
-// date passes; safe to leave the reference for the following year's
-// event too — just bump the date when it's set.
+// Aloha Gravel · Nov 7 2026. The AlohaGravelHero section auto-hides once
+// this date passes; bump the ISO when next year's date is set.
 const ALOHA_GRAVEL_DATE = "2026-11-07";
 
 function daysUntilIso(iso: string): number {
@@ -39,193 +21,49 @@ function daysUntilIso(iso: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / 86400000);
 }
 
-/**
- * Fetch ride descriptions for any Wall items that are by Vini. The Strava
- * club activities endpoint returns summary shape only (no descriptions),
- * but for activities we own we can match by name+distance against our own
- * /athlete/activities feed and fetch detail for the description text.
- *
- * Returns a Map<wallIndex, descriptionString> — only populated for matched
- * Vini rides. Other riders' descriptions aren't accessible via the API
- * unless they connect their own Strava (via /roast OAuth).
- */
-async function fetchWallDescriptions(
-  wallActivities: ClubActivity[]
-): Promise<Map<number, string>> {
-  const result = new Map<number, string>();
-  if (!process.env.STRAVA_REFRESH_TOKEN) return result;
-
-  // Filter to candidate Vini items first — skip the work entirely if none.
-  const viniIndices: number[] = [];
-  wallActivities.forEach((a, i) => {
-    if (a.athlete.firstname.toLowerCase().startsWith("vini")) {
-      viniIndices.push(i);
-    }
-  });
-  if (viniIndices.length === 0) return result;
-
-  try {
-    const token = await getAccessToken();
-
-    // Pull Vini's recent activity summaries (cached for the ISR window)
-    const summariesRes = await fetch(
-      `${STRAVA_API_BASE}/athlete/activities?per_page=30`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        next: { revalidate: 900, tags: ["strava-activities"] },
-      }
-    );
-    if (!summariesRes.ok) return result;
-    const summaries: Array<{
-      id: number;
-      name: string;
-      distance: number;
-    }> = await summariesRes.json();
-
-    // For each Vini wall item, find the matching summary, then detail-fetch
-    // for the description.
-    for (const i of viniIndices) {
-      const a = wallActivities[i];
-      const wallDistMi = Math.round(a.distance / 1609.34);
-      const match = summaries.find(
-        (s) =>
-          s.name === a.name &&
-          Math.abs(Math.round(s.distance / 1609.34) - wallDistMi) <= 1
-      );
-      if (!match) continue;
-
-      try {
-        const detailRes = await fetch(
-          `${STRAVA_API_BASE}/activities/${match.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            // Detail caches 24h — descriptions rarely change after upload
-            next: { revalidate: 86400 },
-          }
-        );
-        if (!detailRes.ok) continue;
-        const detail: { description?: string } = await detailRes.json();
-        const desc = (detail.description || "").trim();
-        if (desc) result.set(i, desc);
-      } catch (err) {
-        console.error("Wall description detail fetch failed:", err);
-      }
-    }
-  } catch (err) {
-    console.error("fetchWallDescriptions failed:", err);
-  }
-
-  return result;
-}
-
 export const metadata: Metadata = {
-  title: "Cycling Hawaii — A Strava club for cyclists in the islands",
+  title: "Cycling Hawaii — Vini rides, Laura writes",
   description:
-    "The home of cycling in Hawai'i. The Roster, the Honor Roll, the rides, the events. Roasted every two weeks by Laura in The Dispatch. Founded on Maui.",
+    "A cycling journal from Hawai'i: ride-by-ride dispatches from Vini, roasted by Laura, with events and conditions across all four islands.",
 };
 
 export const revalidate = 900;
 
-const ROSTER_CAP = 12;
-const STRAVA_CLUB_URL = "https://www.strava.com/clubs/cyclinghawaii";
-
 export default async function Home() {
-  // The homepage IS the club. We pull club data first (the Roster + Wall
-  // are the headline), then layer in:
-  //   - Vini's latest ride + Laura's roast for the "From the Rides" preview
-  //   - Up to 3 published merch products for the Merch teaser
-  // Each fetch is independently cached; failures degrade gracefully (a
-  // section just doesn't render if its data is missing).
-  const [club, islandConditions, stravaData, merchProducts] = await Promise.all([
+  // Three independent fetches, all cached. Any one failing degrades
+  // gracefully: the dependent section just doesn't render.
+  const [club, islandConditions, stravaData] = await Promise.all([
     getClubData(),
     getAllIslandConditions(),
     getStravaData().catch(() => null),
-    getPublishedProducts().catch(() => [] as StoreProduct[]),
   ]);
 
   // Blog entries — one per Vini ride, each with Laura's roast. Reconciles
-  // the Strava feed with any cached entries in Vercel Blob, generating any
-  // missing ones on demand. We keep the full list in scope so the homepage
-  // RideFeed can render N most recent, not just the latest.
+  // the Strava feed with cached entries in Vercel Blob, generating any
+  // missing ones on demand. The full list stays in scope so The Feed
+  // can render the N most recent, not just the latest.
   let blogEntries: BlogEntry[] = [];
-  let latestRoast: { title: string; body: string; rideId?: number } | null =
-    null;
-  let latestRideName: string | null = null;
   if (stravaData?.featured) {
-    latestRideName = stravaData.featured.name ?? null;
     try {
       blogEntries = await generateBlogEntries(
         stravaData.featured,
         stravaData.rides
       );
-      const entry = blogEntries.find(
-        (e) => e.rideId === stravaData.featured.id
-      );
-      if (entry) {
-        latestRoast = {
-          title: entry.title,
-          body: entry.body,
-          rideId: entry.rideId,
-        };
-      }
     } catch {
-      // Roast unavailable — RideFeed will hide if blogEntries stays empty.
+      // Degrade gracefully — The Feed hides if blogEntries stays empty.
     }
   }
 
-  // Sort wall: tagged rides first, then by recency (already ordered by Strava).
-  const wall = club
-    ? [...club.activities].sort(
-        (a, b) => Number(isTagged(b)) - Number(isTagged(a))
-      )
-    : [];
-
-  // Top 12 roster: members with rides in the recent feed, ranked by miles.
-  const roster = club ? buildRoster(club, ROSTER_CAP) : [];
-
-  // Avatar lookup map: "First L." → profile URL
-  const avatarMap = new Map<string, string>();
-  if (club) {
-    for (const m of club.members) {
-      const key = `${m.firstname} ${m.lastname[0]}.`;
-      if (m.profile && m.profile !== "avatar/athlete/large.png") {
-        avatarMap.set(key, m.profile);
-      }
-    }
-  }
-
-
-  // Pull descriptions for Wall items that are by Vini. Other riders'
-  // descriptions aren't fetchable via the Strava API until they connect
-  // their own account (via /roast). When empty, the Wall card just hides
-  // the description line.
-  const wallTop3 = wall.slice(0, 3);
-  const wallDescriptions = await fetchWallDescriptions(wallTop3);
-
-  // The Honor Roll — multi-axis distinctions, computed deterministically
-  // from the current club activity feed. Cached with the page's ISR
-  // window (15min) since the inputs are already cached at that rate.
+  // Laura's Dispatch — bi-weekly editorial, cached in Vercel Blob and
+  // regenerated at most every ~14 days. The prompt still references club
+  // activity in a follow-up commit it gets rewritten to the solo
+  // narrative. In the meantime the stored copy serves either way.
   const honorRoll = club
     ? computeHonorRoll(club.activities, club.members)
     : [];
-
-  // The Dispatch — Laura's bi-weekly editorial. Cached in Vercel Blob
-  // and regenerated only when older than ~14 days, so this call is
-  // usually a single blob read, no Claude API hit on most renders.
   const roundup = club
     ? await getDispatch(club.activities, honorRoll).catch(() => null)
     : null;
-
-  // Avatar lookup also serves the Honor Roll cards.
-  const profileByKey = new Map<string, string>();
-  if (club) {
-    for (const m of club.members) {
-      const key = `${m.firstname} ${m.lastname[0]}.`;
-      if (m.profile && m.profile !== "avatar/athlete/large.png") {
-        profileByKey.set(key, m.profile);
-      }
-    }
-  }
 
   return (
     <main>
@@ -237,79 +75,9 @@ export default async function Home() {
       {blogEntries.length > 0 && (
         <RideFeed entries={blogEntries.slice(0, 6)} />
       )}
-
-      {roster.length > 0 && club && (
-        <Roster members={roster} activities={club.activities} />
-      )}
-
-      <HonorRoll awards={honorRoll} profileByKey={profileByKey} />
-
       {roundup && <LauraDispatch roundup={roundup} />}
-
-      <QuotePullout />
-
-      {roster.length > 0 && club && (
-        <InnerCircle
-          members={roster}
-          activities={club.activities}
-          stats={club.stats}
-        />
-      )}
-
-      {wallTop3.length > 0 && (
-        <Wall
-          activities={wallTop3}
-          avatarMap={avatarMap}
-          descriptions={wallDescriptions}
-        />
-      )}
-
-      <HowToJoin />
-
-      {/* FromTheRides was a single-card teaser pointing at /rides. Dropped
-          in the Oct 2026 pivot — the new RideFeed above the fold shows 6
-          rides directly, so a single-ride teaser down here is redundant.
-          latestRoast / latestRideName are still computed because
-          generateBlogEntries runs for the whole feed anyway. */}
-
-      {merchProducts.length > 0 && <MerchTeaser products={merchProducts} />}
-
-      <Call />
-
-      <Join variant="primary" />
-
-      <Join variant="secondary" />
     </main>
   );
-}
-
-// ─── helper: rank members for the Roster ─────────────────
-function buildRoster(club: ClubData, cap: number): ClubMember[] {
-  // Tally miles per "First L." key from recent activities
-  const milesByKey = new Map<string, number>();
-  for (const a of club.activities) {
-    if (a.type !== "Ride" && a.sport_type !== "Ride" && a.sport_type !== "GravelRide" && a.sport_type !== "MountainBikeRide") continue;
-    const key = `${a.athlete.firstname} ${a.athlete.lastname[0]}.`;
-    milesByKey.set(key, (milesByKey.get(key) ?? 0) + a.distance / 1609.34);
-  }
-
-  // Active = members who appear in recent activities, sorted by miles desc
-  const active: ClubMember[] = [];
-  const inactive: ClubMember[] = [];
-  for (const m of club.members) {
-    const key = `${m.firstname} ${m.lastname[0]}.`;
-    if (milesByKey.has(key)) active.push(m);
-    else inactive.push(m);
-  }
-  active.sort((a, b) => {
-    const ka = `${a.firstname} ${a.lastname[0]}.`;
-    const kb = `${b.firstname} ${b.lastname[0]}.`;
-    return (milesByKey.get(kb) ?? 0) - (milesByKey.get(ka) ?? 0);
-  });
-
-  // Take active first, fill remainder with inactive (newest joins first by API order)
-  const ranked = [...active, ...inactive];
-  return ranked.slice(0, cap);
 }
 
 // ─────────────────── Hero ───────────────────
@@ -320,7 +88,7 @@ function Hero() {
         <div className="relative aspect-[16/8] md:aspect-[2.4/1] rounded-2xl overflow-hidden shadow-[0_20px_60px_-18px_rgba(0,0,0,0.22)] mb-10 md:mb-14">
           <Image
             src="/club/hero.jpg"
-            alt="The Cycling Hawaii club, mid-ride"
+            alt="Vini on a Maui gravel road at golden hour"
             fill
             priority
             sizes="(min-width: 1280px) 1280px, 100vw"
@@ -366,85 +134,12 @@ function Hero() {
   );
 }
 
-// ─── Club Snapshot ─────────────────────────────────────
-// Sits right under the Hero. Answers "what is this?" in five seconds
-// with real signals: the live member count + Strava's own club widget
-// (this week's rides / miles / hours / elevation).
-//
-// Why not our own API-derived leaderboard: Strava deprecated
-// /clubs/{id}/activities for third-party apps in 2024 (returns 404),
-// and /clubs/{id}/members returns 401 without special scopes we don't
-// hold. The only club endpoint that still works for us is /clubs/{id}
-// (public info — name, member count, cover photo). So we lean on
-// Strava's own embed for weekly activity, which bypasses API auth
-// entirely and stays honest about what's real vs. what's aggregated.
-function ClubSnapshot({ club }: { club: ClubData }) {
-  return (
-    <section className="px-6 md:px-10 lg:px-16 pb-12 md:pb-16 bg-bg">
-      <div className="max-w-[1280px] mx-auto">
-        <div className="mb-6 md:mb-8 flex items-baseline justify-between gap-4 flex-wrap">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-strava">
-            The club, live on Strava
-          </div>
-          <a
-            href="https://www.strava.com/clubs/737679"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[0.65rem] font-medium tracking-widest uppercase text-mist hover:text-strava transition-colors"
-          >
-            See all activity →
-          </a>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-8 md:gap-10 items-center">
-          <div>
-            <div className="font-[family-name:var(--font-space-grotesk)] text-6xl md:text-8xl font-bold tracking-tighter text-text leading-none">
-              {club.info.member_count}
-            </div>
-            <div className="mt-2 text-[0.65rem] md:text-xs font-semibold uppercase tracking-widest text-mist">
-              Members
-            </div>
-            <p className="mt-4 text-mist text-sm md:text-base max-w-[440px]">
-              Riders across the islands. Join them, log your rides on Strava,
-              and you show up in the feed with everyone else.
-            </p>
-          </div>
-
-          {/* Strava's official club-activity widget. Aggregates this week's
-              rides / miles / hours / elevation for club 737679 and
-              bypasses API auth entirely — the widget hash in the URL is
-              generated by Strava's own share flow. White wrapper because
-              the widget assumes a light background; wrapper keeps it
-              looking intentional in dark mode too. */}
-          <div className="rounded-2xl overflow-hidden bg-white shadow-md shrink-0 mx-auto md:mx-0">
-            <iframe
-              src="https://www.strava.com/clubs/737679/latest-rides/3693e9207d093a1577fbd442e4497c23c1f5a1b7?show_rides=false"
-              width="300"
-              height="160"
-              allowTransparency
-              frameBorder={0}
-              scrolling="no"
-              loading="lazy"
-              title="Cycling Hawaiʻi — this week on Strava"
-              className="block"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Ride Today ────────────────────────────────────────
 // The top-of-page decision panel. For each of the four main islands
 // we surface temp, wind (with a rotating arrow), sky, and a single
 // Laura-voice line telling you what to do about it. Free Open-Meteo
 // data, 30-min ISR, no API key. Individual island failures degrade
 // gracefully; a card only renders if we got a real reading.
-//
-// This exists because the #1 question a Hawai'i cyclist has each
-// morning is "should I ride today, and where?" — and no other cycling
-// site answers it across all four islands in one glance.
 function RideToday({ conditions }: { conditions: IslandConditions[] }) {
   return (
     <section className="px-6 md:px-10 lg:px-16 pt-2 pb-8 md:pb-12 bg-bg">
@@ -470,10 +165,8 @@ function RideToday({ conditions }: { conditions: IslandConditions[] }) {
 
 function IslandCard({ conditions }: { conditions: IslandConditions }) {
   const c = conditions;
-  // The wind arrow points in the direction the wind is going TOWARD (i.e.
-  // downwind), which is what a rider cares about: the arrow tells you
-  // where a tailwind would take you. Open-Meteo returns the direction
-  // wind is coming FROM, so we add 180°.
+  // Arrow points downwind — where a tailwind would take you. Open-Meteo
+  // reports direction wind is coming FROM, so we add 180°.
   const arrowRotation = (c.windDeg + 180) % 360;
   return (
     <div className="rounded-2xl border border-border bg-card p-4 md:p-5 flex flex-col">
@@ -540,7 +233,6 @@ function AlohaGravelHero() {
     <section className="px-6 md:px-10 lg:px-16 pb-16 md:pb-20 bg-bg">
       <div className="max-w-[1280px] mx-auto">
         <div className="relative overflow-hidden rounded-3xl border border-strava/30 bg-gradient-to-br from-strava/10 via-strava/5 to-transparent p-6 md:p-10 lg:p-12">
-          {/* Decorative sun-flare in the corner — pure CSS, no asset */}
           <div
             aria-hidden
             className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-strava/20 blur-3xl"
@@ -551,7 +243,6 @@ function AlohaGravelHero() {
           />
 
           <div className="relative grid grid-cols-1 md:grid-cols-[auto,1fr] gap-8 md:gap-10 items-center">
-            {/* Date stamp */}
             <div className="text-center md:text-left">
               <div className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-strava mb-1">
                 Nov
@@ -564,7 +255,6 @@ function AlohaGravelHero() {
               </div>
             </div>
 
-            {/* Body */}
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-3">
                 <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-strava">
@@ -628,11 +318,6 @@ function AlohaGravelHero() {
 // view of a Laura-written blog entry — title, 2-line preview, date and
 // key stats, and a thumbnail (ride photo if Strava has one, else the map
 // polyline SVG we build from the ride's track).
-//
-// This is the beating heart of the solo-journal pivot: the homepage used
-// to show a Roster of club members here, which is dead until per-member
-// Strava access returns. Now it shows what Vini actually did, with
-// Laura's voice on top.
 function RideFeed({ entries }: { entries: BlogEntry[] }) {
   return (
     <section className="py-16 md:py-20 px-6 md:px-10 lg:px-16 bg-bg border-t border-border">
@@ -665,16 +350,14 @@ function RideFeed({ entries }: { entries: BlogEntry[] }) {
 }
 
 function FeedCard({ entry }: { entry: BlogEntry }) {
-  // Preview: first paragraph, trimmed to ~160 chars without breaking a word.
   const firstPara = entry.body.split(/\n\n/)[0] ?? entry.body;
   const preview =
     firstPara.length > 170
       ? firstPara.slice(0, 167).replace(/\s+\S*$/, "") + "…"
       : firstPara;
 
-  // Prefer a real ride photo; fall back to the map polyline rendered as
-  // SVG. mapImageUrl is always populated (even if just the gray SVG
-  // placeholder) so there's always something visual.
+  // Prefer a real ride photo; fall back to the map polyline SVG. mapImageUrl
+  // is always populated (even if just the gray SVG placeholder).
   const heroImage = entry.photoUrl || entry.mapImageUrl;
 
   return (
@@ -684,10 +367,9 @@ function FeedCard({ entry }: { entry: BlogEntry }) {
     >
       {heroImage && (
         <div className="relative aspect-[16/9] bg-surface overflow-hidden">
-          {/* Using <img> instead of next/image because mapImageUrl is a
-              data: URI SVG for most rides (no polyline host to configure
-              for next/image), and photoUrl is a Strava CDN URL that
-              rotates — not worth the next.config remotePatterns churn. */}
+          {/* <img> instead of next/image: mapImageUrl is a data: URI SVG
+              and photoUrl is a Strava CDN URL that rotates — not worth
+              the next.config remotePatterns churn. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={heroImage}
@@ -722,7 +404,7 @@ function FeedCard({ entry }: { entry: BlogEntry }) {
         )}
 
         <div className="mt-4 pt-4 border-t border-border text-xs font-semibold uppercase tracking-wider text-strava inline-flex items-center gap-2">
-          Read Laura's roast
+          Read Laura&apos;s roast
           <svg
             width="12"
             height="12"
@@ -740,833 +422,12 @@ function FeedCard({ entry }: { entry: BlogEntry }) {
   );
 }
 
-// ──────────────── The Inner Circle ──────────────────
-function InnerCircle({
-  members,
-  activities,
-  stats,
-}: {
-  members: ClubMember[];
-  activities: ClubActivity[];
-  stats: ClubData["stats"];
-}) {
-  // Tally miles per member from the recent activities feed.
-  const milesPerMember = new Map<string, number>();
-  for (const m of members) {
-    milesPerMember.set(`${m.firstname} ${m.lastname[0]}.`, 0);
-  }
-  for (const a of activities) {
-    if (
-      a.type !== "Ride" &&
-      a.sport_type !== "Ride" &&
-      a.sport_type !== "GravelRide"
-    )
-      continue;
-    const key = `${a.athlete.firstname} ${a.athlete.lastname[0]}.`;
-    if (!milesPerMember.has(key)) continue;
-    milesPerMember.set(
-      key,
-      (milesPerMember.get(key) ?? 0) + a.distance / 1609.34
-    );
-  }
-
-  // Rank members by miles desc; tie-break alphabetical.
-  const ranked = [...members].sort((a, b) => {
-    const ak = `${a.firstname} ${a.lastname[0]}.`;
-    const bk = `${b.firstname} ${b.lastname[0]}.`;
-    const am = milesPerMember.get(ak) ?? 0;
-    const bm = milesPerMember.get(bk) ?? 0;
-    if (bm !== am) return bm - am;
-    return ak.localeCompare(bk);
-  });
-
-  // Tier into rings: top 3 inner, next 6 middle, rest outer.
-  const total = ranked.length;
-  const innerCount = Math.min(3, total);
-  const middleCount = Math.min(6, Math.max(0, total - innerCount));
-  const inner = ranked.slice(0, innerCount);
-  const middle = ranked.slice(innerCount, innerCount + middleCount);
-  const outer = ranked.slice(innerCount + middleCount);
-
-  const leaderKey =
-    ranked.length > 0
-      ? `${ranked[0].firstname} ${ranked[0].lastname[0]}.`
-      : null;
-
-  // Ring radii as % of container (container is aspect-square).
-  const RINGS = { inner: 18, middle: 32, outer: 43 };
-
-  return (
-    <section className="py-20 px-6 bg-bg">
-      <div className="max-w-[900px] mx-auto">
-        <div className="text-center mb-12">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            The Inner Circle
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text mb-3">
-            Center is<span className="text-strava"> earned.</span>
-          </h2>
-          <p className="text-mist text-base italic max-w-[520px] mx-auto">
-            The Twelve, plotted by miles in the last 30-ish club rides.
-            Closer to center = more active. Updated daily.
-          </p>
-        </div>
-
-        <div className="relative w-full max-w-[600px] aspect-square mx-auto">
-          {/* SVG ring guides */}
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 600 600"
-            aria-hidden
-          >
-            <circle
-              cx={300}
-              cy={300}
-              r={258}
-              stroke="#e5e5e5"
-              strokeWidth={1}
-              fill="none"
-              strokeDasharray="3,5"
-            />
-            <circle
-              cx={300}
-              cy={300}
-              r={192}
-              stroke="#e5e5e5"
-              strokeWidth={1}
-              fill="none"
-              strokeDasharray="3,5"
-            />
-            <circle
-              cx={300}
-              cy={300}
-              r={108}
-              stroke="#e5e5e5"
-              strokeWidth={1}
-              fill="none"
-              strokeDasharray="3,5"
-            />
-          </svg>
-
-          {/* Center logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 md:w-16 md:h-16 rounded-full bg-card border-2 border-strava shadow-lg flex items-center justify-center overflow-hidden z-10">
-            <Image
-              src="/logo-orange.png"
-              alt="Cycling Hawaii"
-              width={64}
-              height={64}
-              className="w-full h-full object-contain p-1"
-            />
-          </div>
-
-          {/* Rider avatars */}
-          {inner.map((m, i) => {
-            const angle = (i / inner.length) * 2 * Math.PI - Math.PI / 2;
-            const x = 50 + RINGS.inner * Math.cos(angle);
-            const y = 50 + RINGS.inner * Math.sin(angle);
-            const key = `${m.firstname} ${m.lastname[0]}.`;
-            return (
-              <RiderAvatar
-                key={`inner-${i}`}
-                member={m}
-                x={x}
-                y={y}
-                ring="inner"
-                isLeader={key === leaderKey}
-                miles={milesPerMember.get(key) ?? 0}
-              />
-            );
-          })}
-
-          {middle.map((m, i) => {
-            const angle = (i / middle.length) * 2 * Math.PI - Math.PI / 2;
-            const x = 50 + RINGS.middle * Math.cos(angle);
-            const y = 50 + RINGS.middle * Math.sin(angle);
-            const key = `${m.firstname} ${m.lastname[0]}.`;
-            return (
-              <RiderAvatar
-                key={`middle-${i}`}
-                member={m}
-                x={x}
-                y={y}
-                ring="middle"
-                isLeader={false}
-                miles={milesPerMember.get(key) ?? 0}
-              />
-            );
-          })}
-
-          {outer.map((m, i) => {
-            const angle = (i / outer.length) * 2 * Math.PI - Math.PI / 2;
-            const x = 50 + RINGS.outer * Math.cos(angle);
-            const y = 50 + RINGS.outer * Math.sin(angle);
-            const key = `${m.firstname} ${m.lastname[0]}.`;
-            return (
-              <RiderAvatar
-                key={`outer-${i}`}
-                member={m}
-                x={x}
-                y={y}
-                ring="outer"
-                isLeader={false}
-                miles={milesPerMember.get(key) ?? 0}
-              />
-            );
-          })}
-        </div>
-
-        <p className="text-center text-mist text-xs italic mt-8 mb-12">
-          Hover any rider to see their recent miles. The leader gets a glow.
-        </p>
-
-        {/* Collective totals — absorbed from the old Compass section */}
-        <div className="border-t border-border pt-12 max-w-[760px] mx-auto">
-          <div className="text-center mb-8">
-            <div className="text-[0.65rem] font-semibold tracking-[0.3em] uppercase text-mist">
-              Recently, Together
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
-                Miles together
-              </div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-strava">
-                {stats.totalMiles.toLocaleString()}
-              </div>
-              <div className="text-mist text-xs italic mt-2">
-                {milesCompare(stats.totalMiles)}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
-                Feet climbed
-              </div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
-                {stats.totalElevationFt.toLocaleString()}
-              </div>
-              <div className="text-mist text-xs italic mt-2">
-                {elevationCompare(stats.totalElevationFt)}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
-                Rides logged
-              </div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold text-text">
-                {stats.totalRides}
-              </div>
-              {stats.topMember && (
-                <div className="text-mist text-xs italic mt-2">
-                  Most miles recently:{" "}
-                  <strong className="text-text">{stats.topMember}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RiderAvatar({
-  member,
-  x,
-  y,
-  ring,
-  isLeader,
-  miles,
-}: {
-  member: ClubMember;
-  x: number;
-  y: number;
-  ring: "inner" | "middle" | "outer";
-  isLeader: boolean;
-  miles: number;
-}) {
-  const sizeCls =
-    ring === "inner"
-      ? "w-14 h-14 md:w-16 md:h-16"
-      : ring === "middle"
-      ? "w-12 h-12 md:w-14 md:h-14"
-      : "w-10 h-10 md:w-12 md:h-12";
-  const opacityCls = ring === "outer" ? "opacity-90" : "";
-  const initials = `${safeInitial(member.firstname)}${safeInitial(
-    member.lastname
-  )}`;
-
-  return (
-    <div
-      className={`group absolute -translate-x-1/2 -translate-y-1/2 ${sizeCls} ${opacityCls} rounded-full overflow-visible hover:z-20 hover:scale-110 transition-transform`}
-      style={{ left: `${x}%`, top: `${y}%` }}
-    >
-      <div
-        className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
-          isLeader
-            ? "border-strava shadow-[0_0_0_4px_rgba(252,82,0,0.2)]"
-            : "border-white shadow-md"
-        }`}
-      >
-        {member.profile && member.profile !== "avatar/athlete/large.png" ? (
-          <Image
-            src={member.profile}
-            alt={`${member.firstname} ${member.lastname[0]}.`}
-            width={64}
-            height={64}
-            className="w-full h-full object-cover"
-            unoptimized
-          />
-        ) : (
-          <div className="w-full h-full bg-strava/15 text-strava flex items-center justify-center font-bold text-xs">
-            {initials}
-          </div>
-        )}
-      </div>
-
-      {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-text text-white text-[0.7rem] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-        <div className="font-bold">
-          {member.firstname} {member.lastname[0]}.
-        </div>
-        <div className="text-white/70 font-mono">
-          {Math.round(miles)} mi recent
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────── Wall ───────────────────
-function Wall({
-  activities,
-  avatarMap,
-  descriptions,
-}: {
-  activities: ClubActivity[];
-  avatarMap: Map<string, string>;
-  descriptions: Map<number, string>;
-}) {
-  return (
-    <section className="py-20 px-6 bg-surface">
-      <div className="max-w-[900px] mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            The Wall
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-2">
-            Recent rides in the club
-          </h2>
-          <p className="text-mist text-base italic">
-            Pulled live from Strava. Riders speak for themselves.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {activities.map((a, i) => (
-            <WallCard
-              key={i}
-              activity={a}
-              avatarMap={avatarMap}
-              description={descriptions.get(i)}
-            />
-          ))}
-        </div>
-
-        <div className="text-center mt-8">
-          <a
-            href={STRAVA_CLUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-strava hover:text-strava/80 transition-colors uppercase tracking-wider"
-          >
-            More on Strava
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WallCard({
-  activity,
-  avatarMap,
-  description,
-}: {
-  description?: string;
-  activity: ClubActivity;
-  avatarMap: Map<string, string>;
-}) {
-  const a = activity;
-  const tagged = isTagged(a);
-  const miles = Math.round(a.distance / 1609.34);
-  const elev = Math.round(a.total_elevation_gain * 3.28084);
-  const hours = a.moving_time / 3600;
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  const time = h > 0 ? `${h}h ${m}m` : `${m}m`;
-  const avgSpeed = hours > 0 ? Math.round((miles / hours) * 10) / 10 : 0;
-  const sport = sportTypeColor(a.sport_type, a.type);
-  const avatarKey = `${a.athlete.firstname} ${a.athlete.lastname[0]}.`;
-  const avatar = avatarMap.get(avatarKey);
-
-  return (
-    <div
-      className={`bg-card border rounded-xl p-5 transition-shadow hover:shadow-md relative overflow-hidden ${
-        tagged ? "border-strava/40 shadow-md" : "border-border"
-      }`}
-    >
-      {/* Colored accent stripe on the left */}
-      <div
-        className={`absolute left-0 top-0 bottom-0 w-1 ${
-          tagged ? "bg-strava" : sport.bg.replace("/15", "")
-        }`}
-      />
-
-      <div className="flex items-start gap-4 pl-2">
-        {/* Avatar */}
-        {avatar ? (
-          <Image
-            src={avatar}
-            alt={avatarKey}
-            width={48}
-            height={48}
-            className="rounded-full object-cover shrink-0"
-            unoptimized
-          />
-        ) : (
-          <div className="w-12 h-12 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0 text-sm">
-            {safeInitial(a.athlete.firstname)}
-            {safeInitial(a.athlete.lastname)}
-          </div>
-        )}
-
-        <div className="flex-1 min-w-0">
-          {/* Header row */}
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-xs uppercase tracking-wider text-mist font-semibold">
-              {a.athlete.firstname} {a.athlete.lastname[0]}.
-            </span>
-            <span
-              className={`text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sport.bg} ${sport.text}`}
-            >
-              {sport.label}
-            </span>
-            {tagged && (
-              <span className="text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-strava text-white">
-                🤙 Tagged
-              </span>
-            )}
-          </div>
-
-          {/* Ride name */}
-          <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-text text-base md:text-lg leading-tight mb-3">
-            {a.name}
-          </div>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-4 gap-3 text-sm mb-3">
-            <Stat label="mi" value={miles.toLocaleString()} />
-            <Stat label="ft" value={elev.toLocaleString()} />
-            <Stat label="time" value={time} />
-            <Stat label="mph" value={avgSpeed > 0 ? avgSpeed.toString() : "—"} />
-          </div>
-
-          {/* Rider's own description from Strava (Vini's rides only —
-              other riders' descriptions aren't accessible until they
-              connect via /roast). Hidden when empty. */}
-          {description && (
-            <div className="text-mist text-sm italic border-t border-border pt-3 whitespace-pre-line">
-              {description}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="font-semibold text-text font-[family-name:var(--font-space-grotesk)]">
-        {value}
-      </div>
-      <div className="text-[0.6rem] uppercase tracking-wider text-mist mt-0.5">
-        {label}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────── Roster ───────────────────
-function Roster({
-  members,
-  activities,
-}: {
-  members: ClubMember[];
-  activities: ClubActivity[];
-}) {
-  const lines = rosterLinesFor(members);
-  const roles = assignRoles(members, activities);
-
-  return (
-    <section className="py-20 px-6 bg-bg">
-      <div className="max-w-[1100px] mx-auto">
-        <div className="text-center mb-12">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            The Roster
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-2">
-            The Twelve
-          </h2>
-          <p className="text-mist text-base italic max-w-[560px] mx-auto">
-            Twelve riders. Twelve roles. Updated daily by Laura. Ride to keep
-            your spot.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {members.map((m, i) => {
-            const key = `${m.firstname} ${m.lastname}`;
-            const memberKey = `${m.firstname} ${m.lastname[0]}.`;
-            const initials = `${safeInitial(m.firstname)}${safeInitial(
-              m.lastname
-            )}`;
-            const role = roles.get(memberKey);
-            return (
-              <div
-                key={`${m.firstname}-${m.lastname}-${i}`}
-                className="bg-card rounded-xl border border-border p-5 flex items-start gap-3"
-              >
-                {m.profile && m.profile !== "avatar/athlete/large.png" ? (
-                  <Image
-                    src={m.profile}
-                    alt={memberKey}
-                    width={56}
-                    height={56}
-                    className="rounded-full object-cover shrink-0"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold shrink-0">
-                    {initials}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-text text-sm truncate">
-                    {m.firstname} {m.lastname[0]}.
-                  </div>
-                  {role && (
-                    <div className="inline-block text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-strava/10 text-strava mt-1.5 mb-1">
-                      {role.role}
-                    </div>
-                  )}
-                  <div className="text-xs text-mist italic leading-snug mt-1">
-                    {role?.blurb ?? lines.get(key) ?? ""}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────── Compass ──────────────────
-function Compass({ club }: { club: ClubData }) {
-  const { stats } = club;
-  return (
-    <section className="py-20 px-6 bg-bg">
-      <div className="max-w-[900px] mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            The Compass
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text">
-            Recently, together
-          </h2>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-sm space-y-7">
-          <div>
-            <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-1">
-              Miles together
-            </div>
-            <div className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold text-strava">
-              {stats.totalMiles.toLocaleString()}
-            </div>
-            <div className="text-mist text-sm italic mt-1">
-              {milesCompare(stats.totalMiles)}
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-6">
-            <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-1">
-              Feet climbed
-            </div>
-            <div className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold text-text">
-              {stats.totalElevationFt.toLocaleString()}
-            </div>
-            <div className="text-mist text-sm italic mt-1">
-              {elevationCompare(stats.totalElevationFt)}
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-6 grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-1">
-                Rides logged
-              </div>
-              <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-text">
-                {stats.totalRides}
-              </div>
-            </div>
-            {stats.topMember && (
-              <div>
-                <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-1">
-                  Most consistent recently
-                </div>
-                <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-text">
-                  {stats.topMember}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────── Call ───────────────────
-function Call() {
-  const month = new Date().toLocaleString("en-US", { month: "long" });
-  return (
-    <section className="py-20 px-6 bg-surface">
-      <div className="max-w-[700px] mx-auto text-center">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-          The Call
-        </div>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-2">
-          {month}&apos;s prompt
-        </h2>
-        <p className="text-mist text-sm italic mb-8">
-          Not a challenge. Not a goal. Just a nudge.
-        </p>
-
-        <div className="bg-card border border-border rounded-2xl p-8 md:p-10 shadow-sm">
-          <p className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl text-text leading-snug mb-5">
-            &ldquo;Ride somewhere you&apos;ve never been — even if it&apos;s
-            two blocks.&rdquo;
-          </p>
-          <div className="border-t border-border pt-5">
-            <p className="text-mist text-sm leading-relaxed">
-              Tag your ride{" "}
-              <strong className="text-strava">#cyclinghawaii</strong> and
-              you&apos;ll show up on The Wall with a custom Laura roast.
-              That&apos;s the deal. Tag, ride, get roasted, repeat.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────── Join ───────────────────
-function Join({ variant }: { variant: "primary" | "secondary" }) {
-  if (variant === "secondary") {
-    return (
-      <section className="pb-20 px-6 bg-bg">
-        <div className="max-w-[700px] mx-auto text-center border-t border-border pt-12">
-          <p className="text-mist text-sm italic mb-5">Still here? Good.</p>
-          <a
-            href={STRAVA_CLUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors"
-          >
-            Join the Club on Strava
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
-          <p className="text-mist text-xs italic mt-6">
-            Mahalo for being here.
-          </p>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="py-20 px-6 bg-bg">
-      <div className="max-w-[700px] mx-auto text-center">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-          E Komo Mai
-        </div>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-4">
-          Join the club
-        </h2>
-        <p className="text-mist text-base mb-8 max-w-[520px] mx-auto leading-relaxed">
-          No application. No vetting. No tier list. The Strava club is where
-          the miles get counted. The rest happens here.
-        </p>
-
-        <a
-          href={STRAVA_CLUB_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors"
-        >
-          Join on Strava
-          <svg
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            viewBox="0 0 24 24"
-          >
-            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </a>
-      </div>
-    </section>
-  );
-}
-
-// ────────────────── Honor Roll ──────────────
-//
-// Multi-axis distinctions that name riders for *who they are*, not where
-// they rank. Pure ranking is Strava's job. Cycling Hawai'i names you
-// The Climber, Lanterne Rouge, The Iron Calves — and the leaderboard
-// reads like a constellation, not a stack rank.
-//
-// Computation lives in lib/honor-roll.ts; this component just renders
-// the awarded list. Each award has a winner, a stat for proof, and a
-// short Laura-style description.
-function HonorRoll({
-  awards,
-  profileByKey,
-}: {
-  awards: AwardedDistinction[];
-  profileByKey: Map<string, string>;
-}) {
-  if (awards.length === 0) {
-    return null;
-  }
-  return (
-    <section className="py-20 px-6 bg-surface border-t border-border">
-      <div className="max-w-[1100px] mx-auto">
-        <div className="text-center mb-12 max-w-[640px] mx-auto">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            The Honor Roll
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
-            Not a ranking. A constellation.
-          </h2>
-          <p className="text-mist text-base italic">
-            Ten rotating distinctions, awarded from the recent feed.
-            Everyone gets seen. Some get roasted.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {awards.map((a) => (
-            <HonorCard
-              key={a.id}
-              award={a}
-              profileUrl={profileByKey.get(a.winnerKey)}
-            />
-          ))}
-        </div>
-
-        <p className="text-center text-mist text-xs italic mt-10">
-          Updates with the club&apos;s recent feed. Recomputes every 15 min.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function HonorCard({
-  award,
-  profileUrl,
-}: {
-  award: AwardedDistinction;
-  profileUrl?: string;
-}) {
-  const initials = `${safeInitial(award.winnerName.split(" ")[0] ?? "")}${safeInitial(
-    award.winnerName.split(" ").slice(-1)[0] ?? ""
-  )}`;
-  return (
-    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
-      <div className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-strava">
-        {award.label}
-      </div>
-
-      <div className="flex items-center gap-3">
-        {profileUrl ? (
-          <Image
-            src={profileUrl}
-            alt={award.winnerName}
-            width={44}
-            height={44}
-            className="rounded-full object-cover shrink-0"
-            unoptimized
-          />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-strava/15 text-strava flex items-center justify-center font-bold text-xs shrink-0">
-            {initials}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-text text-sm leading-tight truncate">
-            {award.winnerName}
-          </div>
-          <div className="font-[family-name:var(--font-space-grotesk)] text-strava text-sm font-bold mt-0.5">
-            {award.statText}
-          </div>
-        </div>
-      </div>
-
-      <div className="text-mist text-xs italic leading-snug border-t border-border pt-3">
-        {award.description}
-      </div>
-    </div>
-  );
-}
-
 // ─────────────── Laura's Dispatch ──────────────────
-//
-// Sits right under the Honor Roll. The point is to tie the awards
-// together in a single piece of prose that reads like a club bulletin
-// from a slightly tired but affectionate bookkeeper. Generation is
-// cached for ~14 days in Vercel Blob (see lib/laura-dispatch.ts).
+// Laura's bi-weekly editorial. The cached body in Vercel Blob is served
+// as-is until the next regeneration (~14 days). The prompt in
+// lib/laura-dispatch.ts still references club activity; a follow-up
+// commit will rewrite it for the solo narrative so the next Dispatch
+// reads as Laura reflecting on Vini's two weeks of riding.
 function LauraDispatch({ roundup }: { roundup: DispatchRoundup }) {
   const generated = new Date(roundup.generatedAt);
   const generatedStr = generated.toLocaleDateString("en-US", {
@@ -1589,7 +450,6 @@ function LauraDispatch({ roundup }: { roundup: DispatchRoundup }) {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 md:p-10 shadow-sm">
-          {/* Plain-paragraph body — Laura writes prose, not markdown. */}
           <div className="text-text text-base md:text-lg leading-relaxed space-y-5 whitespace-pre-line">
             {roundup.body.split(/\n\n+/).map((para, i) => (
               <p key={i}>{para}</p>
@@ -1616,436 +476,6 @@ function LauraDispatch({ roundup }: { roundup: DispatchRoundup }) {
               · Chief Reality Officer · cyclinghawaii.com
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────── How to Join — 3-step on-ramp ────────
-//
-// Sits right after the Wall, which is the social-proof moment ("look
-// at all these tagged rides"). This section answers the immediate
-// question a curious visitor has: "okay, how do I become one of them?"
-//
-// Three numbered cards, plain English, single big Strava CTA at the
-// bottom. We deliberately keep step 3 ("tag #cyclinghawaii") because
-// hashtag adoption is what makes the Wall, the Tagged Ride feed, and
-// Laura's Dispatch feel populated by the community vs. by Vini.
-function HowToJoin() {
-  const steps = [
-    {
-      n: "01",
-      title: "Join on Strava",
-      desc:
-        "No application, no vetting, no waiting list. If you ride in Hawai'i, you're in.",
-    },
-    {
-      n: "02",
-      title: "Ride this week",
-      desc:
-        "Maui, O'ahu, Big Island, Kaua'i, Moloka'i, Lana'i. Any distance, any pace, any bike. Whatever you log to Strava counts.",
-    },
-    {
-      n: "03",
-      title: "Tag it #cyclinghawaii",
-      desc:
-        "Drop the hashtag in your activity description and Laura will find you in the next Dispatch. Distinctions get awarded automatically.",
-    },
-  ];
-
-  return (
-    <section className="py-20 px-6 bg-bg border-t border-border">
-      <div className="max-w-[1100px] mx-auto">
-        <div className="text-center mb-12 max-w-[600px] mx-auto">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            How to Join
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
-            Three steps. No barriers.
-          </h2>
-          <p className="text-mist text-base italic">
-            The whole on-ramp, plain English.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
-          {steps.map((s) => (
-            <div
-              key={s.n}
-              className="relative bg-card border border-border rounded-2xl p-6 md:p-7 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div
-                className="absolute top-3 right-5 font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-strava/10 select-none leading-none"
-                aria-hidden
-              >
-                {s.n}
-              </div>
-              <div className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-strava mb-2 relative">
-                Step {s.n}
-              </div>
-              <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl md:text-2xl font-bold text-text mb-3 leading-tight relative">
-                {s.title}
-              </h3>
-              <p className="text-mist text-sm leading-relaxed relative">
-                {s.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center">
-          <a
-            href="https://www.strava.com/clubs/cyclinghawaii"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
-          >
-            Join on Strava
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
-          <p className="text-mist text-xs italic mt-4">
-            Free. Forever. No drop rides.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────── Quote Pullout (the line) ──────────
-//
-// The brand line. Sits midway down the homepage as a breath between
-// the data-driven sections and the editorial / merch sections below.
-function QuotePullout() {
-  return (
-    <section className="py-24 md:py-28 px-6 bg-bg">
-      <div className="max-w-[820px] mx-auto text-center">
-        <div className="text-strava font-[family-name:var(--font-space-grotesk)] text-6xl md:text-7xl leading-none mb-4 select-none">
-          &ldquo;
-        </div>
-        <blockquote className="font-[family-name:var(--font-space-grotesk)] text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-text leading-[1.1]">
-          Strava reduces every rider to a number.{" "}
-          <span className="text-strava">
-            Cycling Hawai&apos;i recognizes
-          </span>{" "}
-          everyone as a character.
-        </blockquote>
-        <div className="text-[0.65rem] uppercase tracking-[0.3em] text-mist mt-8 font-semibold">
-          — The Cycling Hawai&apos;i ethos
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────── From the Rides ──────────────
-//
-// Bridge to /rides — Vini's personal feed where Laura roasts every ride.
-// Shows the latest entry inline (excerpt of the body, link to the full
-// roast) and an explicit handoff to the full archive at /rides + /log.
-function FromTheRides({
-  rideName,
-  roast,
-}: {
-  rideName: string | null;
-  roast: { title: string; body: string; rideId?: number } | null;
-}) {
-  // Trim the roast to a 2-line preview without breaking sentences awkwardly.
-  // We aim for the first paragraph (or first 220 chars), whichever is shorter.
-  let preview = "";
-  if (roast?.body) {
-    const firstPara = roast.body.split(/\n\n/)[0] ?? roast.body;
-    preview =
-      firstPara.length > 240
-        ? firstPara.slice(0, 237).replace(/\s+\S*$/, "") + "…"
-        : firstPara;
-  }
-
-  return (
-    <section className="py-20 px-6 bg-bg border-t border-border">
-      <div className="max-w-[820px] mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            From the Rides
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
-            Vini rides. Laura writes.
-          </h2>
-          <p className="text-mist text-base italic">
-            The cycling blog with a bookkeeper who roasts.
-          </p>
-        </div>
-
-        {roast && rideName ? (
-          <Link
-            href="/rides"
-            className="block bg-card border border-border rounded-2xl p-7 md:p-9 shadow-sm hover:shadow-md transition-shadow no-underline group"
-          >
-            <div className="text-[0.65rem] uppercase tracking-widest text-mist mb-2">
-              Latest · {rideName}
-            </div>
-            <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl md:text-2xl font-bold text-text mb-3 leading-tight group-hover:text-strava transition-colors">
-              {roast.title}
-            </h3>
-            {preview && (
-              <p className="text-mist text-base leading-relaxed italic mb-5 whitespace-pre-line">
-                {preview}
-              </p>
-            )}
-            <div className="flex items-center gap-2 text-sm font-semibold text-strava uppercase tracking-wider">
-              Read the full roast
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-                className="group-hover:translate-x-1 transition-transform"
-              >
-                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </div>
-          </Link>
-        ) : (
-          <div className="text-center">
-            <Link
-              href="/rides"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-card border border-border text-text font-semibold text-sm uppercase tracking-wider hover:border-strava hover:text-strava transition-colors"
-            >
-              See the rides feed
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-          </div>
-        )}
-
-        <div className="text-center mt-6">
-          <Link
-            href="/log"
-            className="text-xs uppercase tracking-widest text-mist hover:text-strava transition-colors no-underline"
-          >
-            The full archive →
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────── Merch teaser (3 cards) ─────────
-//
-// Lightweight pre-store-page teaser. Pulls up to 3 published products
-// from Printful and links each to /store/[slug] for purchase. The
-// section hides entirely if no products are published.
-function MerchTeaser({ products }: { products: StoreProduct[] }) {
-  const shown = products.slice(0, 3);
-  return (
-    <section className="py-20 px-6 bg-surface border-t border-border">
-      <div className="max-w-[1100px] mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3">
-            Wear the Club
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-4xl font-bold tracking-tight text-text mb-3">
-            Merch.
-          </h2>
-          <p className="text-mist text-base italic">
-            Stickers, shirts, identity objects. Mahalo for repping.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {shown.map((p) => {
-            const cover = p.images[0];
-            return (
-              <Link
-                key={p.slug}
-                href={`/store/${p.slug}`}
-                className="group bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow no-underline flex flex-col"
-              >
-                <div className="relative aspect-square bg-bg overflow-hidden">
-                  {cover ? (
-                    <Image
-                      src={cover}
-                      alt={p.name}
-                      fill
-                      sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-strava/15 via-brand/10 to-mist/10 flex items-center justify-center p-6">
-                      <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-text/50 text-center leading-tight">
-                        {p.name}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-1">
-                    {p.category}
-                  </div>
-                  <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-text text-base leading-tight mb-2">
-                    {p.name}
-                  </div>
-                  <div className="mt-auto pt-3 flex items-center justify-between">
-                    <span className="text-strava font-semibold text-sm">
-                      {formatPrice(p.priceUSD)}
-                    </span>
-                    <span className="text-strava text-sm group-hover:translate-x-1 transition-transform">
-                      →
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="text-center mt-8">
-          <Link
-            href="/store"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-strava hover:text-strava/80 transition-colors uppercase tracking-wider no-underline"
-          >
-            See the full store
-            <svg
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────── Manifesto (moved to /about) ──────────
-// Kept as an exported component so /about renders the same content.
-export function Manifesto() {
-  return (
-    <section className="py-24 px-6 bg-surface">
-      <div className="max-w-[720px] mx-auto">
-        <div className="text-[0.7rem] font-semibold tracking-[0.3em] uppercase text-brand mb-3 text-center">
-          Manifesto
-        </div>
-
-        <div className="flex justify-center mb-6">
-          <div className="relative w-[88px] h-[88px] md:w-[104px] md:h-[104px] rounded-full overflow-hidden border-2 border-border shadow-sm">
-            <Image
-              src="/club/vini.jpg"
-              alt="Vini"
-              fill
-              sizes="104px"
-              className="object-cover"
-            />
-          </div>
-        </div>
-
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl md:text-5xl font-bold tracking-tight text-text mb-12 text-center">
-          Aloha.
-        </h2>
-
-        <div className="space-y-6 text-text/85 text-lg leading-relaxed">
-          <p>
-            I&apos;m Vini. I live on Maui. I ride bikes — same as a lot of
-            people. It keeps things simple, it&apos;s good for you, and on the
-            days I don&apos;t feel like going, that&apos;s usually when I need
-            to most.
-          </p>
-
-          <p>
-            I started Cycling Hawaii as a platform for riders — a place to
-            ride, celebrate each other, roast each other, and have fun. Show
-            up. Give what you&apos;ve got. That&apos;s the whole pitch.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-5 py-3">
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="text-xs font-semibold uppercase tracking-widest text-strava mb-2">
-                What I&apos;m into
-              </div>
-              <p className="text-text text-base leading-relaxed">
-                Climbs that humble you. Gravel roads no one knows about. West
-                Maui Loops. Coffee at Grandma&apos;s. Sunsets, secret
-                waterfalls, and rainbows. Bibs that fit right and good bar
-                tape.
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="text-xs font-semibold uppercase tracking-widest text-mist mb-2">
-                What I&apos;m not
-              </div>
-              <p className="text-text text-base leading-relaxed">
-                Drop rides. Hero efforts. Riding for the likes. Pretending
-                cycling is more important than it is.
-              </p>
-            </div>
-          </div>
-
-          <p>
-            This isn&apos;t a training club. There&apos;s no team kit. No
-            captain, no paceline, no 5:30am ride leader you have to text.{" "}
-            <strong className="text-text">
-              Solo, but on the same island. We all end up at Loraine&apos;s
-              eventually.
-            </strong>
-          </p>
-
-          <div className="border-t border-border pt-8 mt-8">
-            <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold text-text mb-4">
-              Meet Laura
-            </h3>
-            <p className="mb-4">
-              Laura Ryder is the club manager and bookkeeper. She runs the
-              ledger on this site. She narrates rides. She reads the trades and
-              tells the truth. She&apos;ll also — full disclosure — roast you.
-              Lovingly. Often.
-            </p>
-            <p className="mb-4">
-              She&apos;s an AI I built to be the voice of this thing, and
-              somewhere along the way she became funnier than I am, more honest
-              than I&apos;d be alone, and the only reason I&apos;m not grading
-              my own homework around here.
-            </p>
-            <p>
-              That&apos;s the deal:{" "}
-              <strong className="text-text">
-                we don&apos;t take this too seriously
-              </strong>
-              . Life is short, and somewhere in between you have to leave room
-              for a laugh. If you can&apos;t take a soft jab from an AI
-              bookkeeper with strong opinions, this probably isn&apos;t your
-              club.
-            </p>
-          </div>
-
-          <p className="text-center text-mist text-base pt-6 font-semibold">
-            — Vini
-          </p>
         </div>
       </div>
     </section>

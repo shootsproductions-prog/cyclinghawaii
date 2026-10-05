@@ -1,24 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import Image from "next/image";
 
-// `href` is an absolute path. `hash` jumps to a homepage section.
-// Top nav stays product-focused. Lifestyle/social links live in the Footer.
+// `href` is an absolute path. Top nav kept short — the logo on the left
+// is the home link, so no "Home" entry is needed. Social and secondary
+// links live in the Footer.
 //
-// As of the June 21 launch restructure, the homepage IS the club —
-// so we no longer link to /club from the nav (it redirects to / anyway).
-// "Rides" now points to its own page where Vini's personal feed lives.
-const links: { hash?: string; href?: string; label: string }[] = [
-  { href: "/", label: "Home" },
+// Rebuilt in the Oct 2026 solo-journal pivot: dropped Home, Store, /club.
+// Renamed Log → Dispatch to match the Laura branding.
+const links: { href: string; label: string }[] = [
   { href: "/rides", label: "Rides" },
-  { href: "/log", label: "Log" },
+  { href: "/log", label: "Dispatch" },
   { href: "/events", label: "Events" },
-  { href: "/store", label: "Store" },
   { href: "/about", label: "About" },
-  // /roast, /tour, /routes are unlinked from the nav for now — direct
-  // URLs work, but they're not part of the launch story.
 ];
 
 // `slot` is rendered between the link list and the burger button. We use
@@ -27,22 +22,12 @@ const links: { hash?: string; href?: string; label: string }[] = [
 export default function Nav({ slot }: { slot?: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const isHome = pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Absolute paths win. Otherwise:
-  //   - On home, use #hash for smooth-scroll
-  //   - On any other page (e.g. /log), use /#hash to navigate back + scroll
-  const hrefFor = (link: { hash?: string; href?: string }) => {
-    if (link.href) return link.href;
-    return isHome ? `#${link.hash}` : `/#${link.hash}`;
-  };
 
   return (
     <nav
@@ -74,9 +59,9 @@ export default function Nav({ slot }: { slot?: React.ReactNode }) {
         }`}
       >
         {links.map((link) => (
-          <li key={link.href ?? link.hash}>
+          <li key={link.href}>
             <a
-              href={hrefFor(link)}
+              href={link.href}
               onClick={() => setMenuOpen(false)}
               className="text-mist text-sm font-medium uppercase tracking-widest no-underline transition-colors hover:text-text"
             >

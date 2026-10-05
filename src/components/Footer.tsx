@@ -1,16 +1,13 @@
 import Image from "next/image";
 
 const FOOTER_LINKS = [
+  { href: "/rides", label: "Rides", external: false },
+  { href: "/log", label: "Dispatch", external: false },
   { href: "/events", label: "Events", external: false },
-  { href: "/gear", label: "Gear", external: false },
-  { href: "/store", label: "Store", external: false },
+  { href: "/about", label: "About", external: false },
   { href: "/live", label: "Live Tracker", external: false },
-  { href: "/#scarab", label: "Scarab", external: false },
-  { href: "/brand", label: "Brand", external: false },
   { href: "https://instagram.com/cyclinghawaii", label: "Instagram", external: true },
-  { href: "/#youtube", label: "YouTube", external: false },
-  { href: "/#spotify", label: "Spotify", external: false },
-  { href: "/#partners", label: "Contact", external: false },
+  { href: "https://www.strava.com/clubs/737679", label: "Strava", external: true },
 ];
 
 export default function Footer() {
@@ -65,11 +62,11 @@ export default function Footer() {
             </svg>
           </a>
           <a
-            href="https://www.strava.com/clubs/cyclinghawaii"
+            href="https://www.strava.com/clubs/737679"
             target="_blank"
             rel="noopener noreferrer"
             className="text-mist hover:text-strava transition-colors"
-            aria-label="Strava Club"
+            aria-label="Strava"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
@@ -96,7 +93,7 @@ export default function Footer() {
             laura@cyclinghawaii.com
           </a>
           <p className="text-mist/70 text-xs italic mt-1">
-            Questions, club inquiries, custom builds — Laura reads everything.
+            Questions, press, event invites — Laura reads everything.
           </p>
         </div>
 
