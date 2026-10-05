@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import ThemeToggle from "./ThemeToggle";
 
 // `href` is an absolute path. `hash` jumps to a homepage section.
 // Top nav stays product-focused. Lifestyle/social links live in the Footer.
@@ -87,10 +86,7 @@ export default function Nav({ slot }: { slot?: React.ReactNode }) {
         ))}
       </ul>
 
-      <div className="ml-4 flex items-center gap-2">
-        {slot && <div className="hidden md:flex items-center">{slot}</div>}
-        <ThemeToggle />
-      </div>
+      {slot && <div className="ml-4 hidden md:flex items-center">{slot}</div>}
 
       <button
         onClick={() => setMenuOpen(!menuOpen)}

@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* Light-mode token defaults. Dark counterparts live in the media query
- * below so the site automatically flips with the OS setting. A manual
- * toggle can layer on top later by writing to :root variables directly. */
+/* Light theme only. Dark mode was removed in the Oct 2026 pivot — the
+ * site is Vini's personal cycling journal + event hub now, and the
+ * sun-washed Hawai'i aesthetic doesn't translate to a dark palette.
+ * Light is the brand. */
 @theme inline {
   --color-bg: #ffffff;
   --color-surface: #f5f5f5;
@@ -17,52 +18,10 @@
   --font-display: var(--font-space-grotesk);
 }
 
-/* Dark mode. Two paths lead here:
- *   1. OS is dark AND the user hasn't explicitly picked light — the media
- *      query below applies, gated on `:root:not([data-theme="light"])`.
- *   2. The user clicked the toggle to dark — `:root[data-theme="dark"]`
- *      applies unconditionally and wins over the media query.
- * Same token values in both — duplicated for clarity, not shared through
- * a mixin, because CSS doesn't have one and a variable-of-variables
- * trick would obscure the intent.
- *
- * Design notes:
- *  - bg #0a0a0a instead of pure black — avoids OLED burn and reads softer.
- *  - card slightly lighter than surface so hover states still separate.
- *  - mist bumped to #a8a8a8 so secondary text keeps WCAG AA contrast on the
- *    dark background (the light-mode #666 would fail on #0a0a0a).
- *  - brand + strava lightened just enough to keep the orange snap while
- *    holding contrast against the darker card and border.
- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #0a0a0a;
-    --color-surface: #171717;
-    --color-card: #1c1c1c;
-    --color-text: #f5f5f5;
-    --color-mist: #a8a8a8;
-    --color-border: #2a2a2a;
-    --color-brand: #d97706;
-    --color-strava: #ff6a1f;
-  }
-}
-
-:root[data-theme="dark"] {
-  --color-bg: #0a0a0a;
-  --color-surface: #171717;
-  --color-card: #1c1c1c;
-  --color-text: #f5f5f5;
-  --color-mist: #a8a8a8;
-  --color-border: #2a2a2a;
-  --color-brand: #d97706;
-  --color-strava: #ff6a1f;
-}
-
 html {
-  /* Tells the browser to render its own UI (scrollbars, form controls,
-   * default focus rings) in the matching scheme so the site doesn't have
-   * a light scrollbar on a dark page. */
-  color-scheme: light dark;
+  /* Explicit light scheme so the browser renders scrollbars + form
+   * controls in a matching palette even when a visitor's OS is dark. */
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 

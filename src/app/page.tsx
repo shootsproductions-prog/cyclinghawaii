@@ -229,7 +229,11 @@ export default async function Home() {
       {islandConditions.length > 0 && (
         <RideToday conditions={islandConditions} />
       )}
-      {club && <ClubSnapshot club={club} />}
+      {/* ClubSnapshot removed in the Oct 2026 pivot — the site is a solo
+          cycling journal now, not a club platform. Component code is kept
+          in-file for one commit so the diff is reviewable; it comes out
+          in commit 3 along with the Roster / Honor Roll / Inner Circle /
+          Wall and the /club route. */}
       <AlohaGravelHero />
 
       {roster.length > 0 && club && (
@@ -322,26 +326,26 @@ function Hero() {
         </div>
         <div className="max-w-[820px]">
           <div className="text-[0.7rem] md:text-xs font-semibold tracking-[0.3em] uppercase text-strava mb-4">
-            Cycling Hawai&apos;i · Strava Club · Maui
+            Hawai&apos;i · One Rider · Four Islands
           </div>
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-text leading-[0.95] mb-5">
             Just<span className="text-strava"> Ride.</span>
           </h1>
           <p className="text-mist text-base md:text-lg leading-relaxed italic max-w-[620px] mb-7">
-            No team kit, no drop rides, no podiums — and the audacity to call
-            it a club.
+            Riding every corner of these islands, chasing light and getting
+            roasted by Laura. Welcome to the feed.
           </p>
-          {/* Single primary CTA. The Strava widget that used to sit here
-              moved out because ClubSnapshot (rendered right below the
-              Hero) shows the same data richer and on-brand — the widget
-              was doing duplicate work with worse typography. */}
+          {/* Points at the club URL as a safe fallback until Vini confirms
+              his personal athlete-profile URL. Once we have that, swap this
+              href to https://www.strava.com/athletes/{id} so "Follow" means
+              follow the rider, not join the club. */}
           <a
             href="https://www.strava.com/clubs/737679"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-strava text-white font-semibold text-sm uppercase tracking-wider hover:bg-strava/90 transition-colors shadow-md shadow-strava/20"
           >
-            Join on Strava
+            Follow on Strava
             <svg
               width="14"
               height="14"
