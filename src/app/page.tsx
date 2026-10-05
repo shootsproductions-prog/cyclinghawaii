@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getClubData } from "@/lib/club";
 import {
   getAllIslandConditions,
   type IslandConditions,
 } from "@/lib/conditions";
 import { getStravaData } from "@/lib/strava";
 import { generateBlogEntries, type BlogEntry } from "@/lib/blog";
-import { computeHonorRoll } from "@/lib/honor-roll";
 import { getDispatch, type DispatchRoundup } from "@/lib/laura-dispatch";
 
 // Aloha Gravel · Nov 7 2026. The AlohaGravelHero section auto-hides once
@@ -30,18 +28,17 @@ export const metadata: Metadata = {
 export const revalidate = 900;
 
 export default async function Home() {
-  // Three independent fetches, all cached. Any one failing degrades
+  // Two independent fetches, both cached. Either failing degrades
   // gracefully: the dependent section just doesn't render.
-  const [club, islandConditions, stravaData] = await Promise.all([
-    getClubData(),
+  const [islandConditions, stravaData] = await Promise.all([
     getAllIslandConditions(),
     getStravaData().catch(() => null),
   ]);
 
   // Blog entries — one per Vini ride, each with Laura's roast. Reconciles
   // the Strava feed with cached entries in Vercel Blob, generating any
-  // missing ones on demand. The full list stays in scope so The Feed
-  // can render the N most recent, not just the latest.
+  // missing ones on demand. The full list stays in scope so The Feed,
+  // the AG Journal, and the Dispatch all read from the same source.
   let blogEntries: BlogEntry[] = [];
   if (stravaData?.featured) {
     try {
@@ -50,20 +47,18 @@ export default async function Home() {
         stravaData.rides
       );
     } catch {
-      // Degrade gracefully — The Feed hides if blogEntries stays empty.
+      // Degrade gracefully — dependent sections hide if blogEntries is empty.
     }
   }
 
   // Laura's Dispatch — bi-weekly editorial, cached in Vercel Blob and
-  // regenerated at most every ~14 days. The prompt still references club
-  // activity in a follow-up commit it gets rewritten to the solo
-  // narrative. In the meantime the stored copy serves either way.
-  const honorRoll = club
-    ? computeHonorRoll(club.activities, club.members)
-    : [];
-  const roundup = club
-    ? await getDispatch(club.activities, honorRoll).catch(() => null)
+  // regenerated at most every ~14 days. Prompt now reads from the solo
+  // ride journal (BlogEntry[]) instead of club activity.
+  const roundup = blogEntries.length > 0
+    ? await getDispatch(blogEntries).catch(() => null)
     : null;
+
+  const agEntries = blogEntries.filter(isAlohaGravelEntry);
 
   return (
     <main>
@@ -72,11 +67,24 @@ export default async function Home() {
         <RideToday conditions={islandConditions} />
       )}
       <AlohaGravelHero />
+      {agEntries.length > 0 && <AlohaGravelJournal entries={agEntries} />}
       {blogEntries.length > 0 && (
         <RideFeed entries={blogEntries.slice(0, 6)} />
       )}
       {roundup && <LauraDispatch roundup={roundup} />}
     </main>
+  );
+}
+
+// Match any ride that reads as part of the AG push. We lowercase the
+// ride name and body once and look for either the full phrase or the
+// hashtag. Tolerant to typos like "AG prep" by also matching bare "aloha"
+// adjacent to "gravel" — but kept simple so this file doesn't grow a
+// NLP matcher. If Vini drops the convention, update the keywords here.
+function isAlohaGravelEntry(entry: BlogEntry): boolean {
+  const haystack = `${entry.rideName} ${entry.body}`.toLowerCase();
+  return (
+    haystack.includes("aloha gravel") || haystack.includes("#alohagravel")
   );
 }
 
@@ -310,6 +318,93 @@ function AlohaGravelHero() {
         </div>
       </div>
     </section>
+  );
+}
+
+// ─── Aloha Gravel · The Journal ────────────────────────
+// A horizontal scrollable strip of Vini's AG-tagged rides that lives
+// right under the AlohaGravelHero. The daily training/preview posts
+// that build up to Nov 7 show here, in reverse-chronological order,
+// without crowding the main Feed below.
+//
+// Entries are filtered upstream (isAlohaGravelEntry) by matching
+// "aloha gravel" or "#alohagravel" in the ride name or Laura's body
+// text. If nothing matches, the whole section hides — the AG Hero
+// above still carries the countdown either way.
+function AlohaGravelJournal({ entries }: { entries: BlogEntry[] }) {
+  return (
+    <section className="px-6 md:px-10 lg:px-16 pb-12 md:pb-16 bg-bg">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="mb-5 md:mb-6 flex items-baseline justify-between gap-4 flex-wrap">
+          <div>
+            <div className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-strava mb-2">
+              Aloha Gravel · The Journal
+            </div>
+            <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl md:text-2xl font-bold tracking-tight text-text">
+              Daily dispatches on the way to Nov 7.
+            </h3>
+          </div>
+          <div className="text-[0.6rem] uppercase tracking-widest text-mist/70">
+            {entries.length} {entries.length === 1 ? "post" : "posts"} so far
+          </div>
+        </div>
+
+        {/* Horizontal scrollable row. On wider screens the first 3-4
+            cards fit without scrolling; past that or on mobile you drag
+            left to see more. snap-x helps the scroll feel intentional. */}
+        <div className="-mx-6 md:-mx-10 lg:-mx-16 px-6 md:px-10 lg:px-16 overflow-x-auto snap-x snap-mandatory">
+          <div className="flex gap-4 pb-2">
+            {entries.map((e) => (
+              <AlohaGravelCard key={e.rideId} entry={e} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AlohaGravelCard({ entry }: { entry: BlogEntry }) {
+  const firstPara = entry.body.split(/\n\n/)[0] ?? entry.body;
+  const preview =
+    firstPara.length > 120
+      ? firstPara.slice(0, 117).replace(/\s+\S*$/, "") + "…"
+      : firstPara;
+  const heroImage = entry.photoUrl || entry.mapImageUrl;
+
+  return (
+    <Link
+      href={`/rides#${entry.rideId}`}
+      className="group snap-start shrink-0 w-[260px] md:w-[300px] bg-card border border-strava/30 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-strava/60 transition-all no-underline flex flex-col"
+    >
+      {heroImage && (
+        <div className="relative aspect-[16/10] bg-surface overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage}
+            alt={entry.rideName}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+            loading="lazy"
+          />
+        </div>
+      )}
+      <div className="flex-1 p-4 flex flex-col">
+        <div className="text-[0.55rem] uppercase tracking-widest text-strava font-bold mb-2">
+          {entry.date}
+        </div>
+        <h4 className="font-[family-name:var(--font-space-grotesk)] text-sm md:text-base font-bold text-text leading-tight mb-2 group-hover:text-strava transition-colors">
+          {entry.title}
+        </h4>
+        <div className="text-[0.6rem] uppercase tracking-widest text-mist mb-2">
+          {entry.distance} mi · {entry.elevation} ft
+        </div>
+        {preview && (
+          <p className="text-mist text-xs leading-relaxed italic line-clamp-3">
+            {preview}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 
