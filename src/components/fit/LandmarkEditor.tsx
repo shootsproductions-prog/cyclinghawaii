@@ -65,8 +65,10 @@ export default function LandmarkEditor({
   const [zoom, setZoom] = useState(1);
   const [selected, setSelected] = useState<LandmarkId | null>(null);
   const [placingDone, setPlacingDone] = useState(false);
-  // `at` is in image pixels; `nearCorner` says the finger is under the magnifier's usual spot.
-  const [drag, setDrag] = useState<{ id: LandmarkId; at: Point; nearCorner: boolean } | null>(null);
+  // `at` is the point's position in image pixels. `grab` is where on the point the
+  // pointer took hold (pointer minus point), so a point does not jump when grabbed
+  // off-centre. `nearCorner` says the pointer is under the magnifier's usual spot.
+  const [drag, setDrag] = useState<{ id: LandmarkId; at: Point; grab: Point; nearCorner: boolean } | null>(null);
   const [pose, setPose] = useState<PoseStatus>({ state: "idle" });
   const [showTilt, setShowTilt] = useState(tiltDeg !== 0);
 
@@ -144,9 +146,20 @@ export default function LandmarkEditor({
     });
   };
 
-  const beginDrag = (id: LandmarkId, e: ReactPointerEvent<HTMLElement>) => {
-    const at = toImage(e.clientX, e.clientY);
-    setDrag({ id, at, nearCorner: nearCorner(e.clientX, e.clientY) });
+  const clampToFrame = (p: Point): Point => ({
+    x: Math.min(frame.width, Math.max(0, p.x)),
+    y: Math.min(frame.height, Math.max(0, p.y)),
+  });
+
+  /** Start dragging `id`, which currently sits at `from`. */
+  const beginDrag = (id: LandmarkId, from: Point, e: ReactPointerEvent<HTMLElement>) => {
+    const pointer = toImage(e.clientX, e.clientY);
+    setDrag({
+      id,
+      at: from,
+      grab: { x: pointer.x - from.x, y: pointer.y - from.y },
+      nearCorner: nearCorner(e.clientX, e.clientY),
+    });
     try {
       boxRef.current?.setPointerCapture(e.pointerId);
     } catch {
@@ -180,27 +193,39 @@ export default function LandmarkEditor({
     const onHandle = !!target.closest?.("button[data-landmark]");
     const mouse = e.pointerType === "mouse";
 
-    // A point is waiting to be placed. A finger always places it, even
-    // on top of an existing handle; a mouse can still grab a handle
-    // precisely, so a click directly on one drags that instead.
-    if (placing && !(mouse && onHandle)) {
-      setPoint(placing, at);
-      beginDrag(placing, e);
+    if (placing) {
+      // A point is waiting to be placed. Pressing right on a point that
+      // is already down still grabs that one, so a misplaced hip can be
+      // fixed without finishing the rest first. When the rider picked
+      // the point to place from the list, the press always places it,
+      // which is the way to put two points very close together.
+      // The reach is tight (about the size of the dot) so that points
+      // which belong close together, like ankle and heel, can still be
+      // placed one after the other.
+      const existing = selected ? null : nearestPoint(at, mouse ? 9 : 10);
+      if (!existing) {
+        setPoint(placing, at);
+        beginDrag(placing, at, e);
+        return;
+      }
+      if (onHandle) e.preventDefault();
+      handleRefs.current[existing]?.focus({ preventScroll: true });
+      beginDrag(existing, landmarks[existing]!, e);
       return;
     }
 
     const id = nearestPoint(at, mouse ? 18 : 30);
     if (!id) return;
     if (onHandle) e.preventDefault();
-    setSelected(null);
     handleRefs.current[id]?.focus({ preventScroll: true });
-    beginDrag(id, e);
+    beginDrag(id, landmarks[id]!, e);
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!drag) return;
-    const at = toImage(e.clientX, e.clientY);
-    setDrag({ id: drag.id, at, nearCorner: nearCorner(e.clientX, e.clientY) });
+    const pointer = toImage(e.clientX, e.clientY);
+    const at = clampToFrame({ x: pointer.x - drag.grab.x, y: pointer.y - drag.grab.y });
+    setDrag({ ...drag, at, nearCorner: nearCorner(e.clientX, e.clientY) });
     setPoint(drag.id, at);
   };
 
@@ -311,6 +336,10 @@ export default function LandmarkEditor({
       </div>
 
       <div className="mb-2 flex items-center justify-end gap-1.5 text-xs text-mist">
+        {/* On a phone the foot and crank points sit a few pixels apart until you zoom. */}
+        {zoom === 1 && scale > 0 && scale < 0.4 && (
+          <span className="mr-auto text-amber-800">Zoom in to place points precisely.</span>
+        )}
         <span>Zoom</span>
         {[1, 2, 3].map((z) => (
           <button
