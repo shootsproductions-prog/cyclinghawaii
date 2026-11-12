@@ -656,19 +656,21 @@ export default function CoachTool() {
               <Card>
                 <h3 className="font-semibold text-text mb-1">Fitness, fatigue and form</h3>
                 <p className="text-xs text-mist mb-3">
-                  Fitness {analysis.load.fitness.toFixed(0)} and fatigue {analysis.load.fatigue.toFixed(0)} after
-                  today&apos;s riding. Form coming into today: {analysis.load.form >= 0 ? "+" : ""}
-                  {analysis.load.form.toFixed(0)}. Load measured from{" "}
-                  {analysis.load.method === "power"
-                    ? "power"
-                    : analysis.load.method === "hr"
-                      ? "heart rate"
-                      : analysis.load.method === "mixed"
-                        ? "a mix of signals"
-                        : "riding time only"}
-                  .
+                  {`Fitness ${analysis.load.fitness.toFixed(0)} and fatigue ${analysis.load.fatigue.toFixed(0)} after today's riding. Form coming into today: ${analysis.load.form >= 0 ? "+" : "−"}${Math.abs(analysis.load.form).toFixed(0)}. Load measured from ${
+                    analysis.load.method === "power"
+                      ? "power"
+                      : analysis.load.method === "hr"
+                        ? "heart rate"
+                        : analysis.load.method === "mixed"
+                          ? "a mix of signals"
+                          : "riding time only"
+                  }.`}
                 </p>
                 <LoadChart series={analysis.load.series} />
+                <p className="mt-2 text-xs text-mist leading-relaxed">
+                  Form is fitness minus fatigue. Above the line (blue) you are fresh; below it
+                  (red) you are carrying fatigue.
+                </p>
               </Card>
               <Card>
                 <h3 className="font-semibold text-text mb-1">How hard you ride</h3>

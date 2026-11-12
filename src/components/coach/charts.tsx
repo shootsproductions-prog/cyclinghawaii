@@ -323,13 +323,13 @@ export function LoadChart({ series }: { series: LoadPoint[] }) {
 
             {/* Bottom panel: form, on its own axis, split at zero. */}
             <text x={pad.left} y={formTop - 12} fontSize={11} fill={VIZ.muted}>
-              Form (fitness minus fatigue): above the line is fresh, below is tired
+              Form
             </text>
             {[formMax, -formMax].map((t) => (
               <g key={`f${t}`}>
                 <line x1={pad.left} x2={width - pad.right} y1={yForm(t)} y2={yForm(t)} stroke={VIZ.grid} strokeWidth={1} />
                 <text x={pad.left - 6} y={yForm(t)} textAnchor="end" dominantBaseline="central" fontSize={11} fill={VIZ.muted} style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {t > 0 ? `+${t}` : t}
+                  {t > 0 ? `+${t}` : `−${Math.abs(t)}`}
                 </text>
               </g>
             ))}
@@ -364,7 +364,7 @@ export function LoadChart({ series }: { series: LoadPoint[] }) {
             <div className="font-semibold text-text mb-1">{shortDay(point.day)}</div>
             <Row swatch={VIZ.blue} label="Fitness" value={point.fitness.toFixed(0)} />
             <Row swatch={VIZ.orange} label="Fatigue" value={point.fatigue.toFixed(0)} />
-            <Row label="Form" value={`${point.form >= 0 ? "+" : ""}${point.form.toFixed(0)}`} />
+            <Row label="Form" value={`${point.form >= 0 ? "+" : "−"}${Math.abs(point.form).toFixed(0)}`} />
             <Row label="Load that day" value={point.load.toFixed(0)} />
           </Tooltip>
         )}
