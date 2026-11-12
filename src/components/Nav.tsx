@@ -13,6 +13,8 @@ const links: { href: string; label: string }[] = [
   { href: "/rides", label: "Rides" },
   { href: "/log", label: "Dispatch" },
   { href: "/events", label: "Events" },
+  { href: "/fit", label: "Fit" },
+  { href: "/coach", label: "Coach" },
   { href: "/about", label: "About" },
 ];
 
@@ -52,7 +54,7 @@ export default function Nav({ slot }: { slot?: React.ReactNode }) {
       </a>
 
       <ul
-        className={`flex list-none gap-8 md:flex ${
+        className={`flex list-none gap-8 md:gap-5 lg:gap-8 md:flex ${
           menuOpen
             ? "fixed top-0 right-0 h-screen w-64 flex-col gap-6 bg-bg/98 backdrop-blur-2xl pt-20 px-8 z-50 shadow-xl border-l border-border"
             : "max-md:hidden"

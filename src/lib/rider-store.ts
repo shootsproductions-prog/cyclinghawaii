@@ -49,6 +49,9 @@ const RESERVED_SLUGS = new Set([
   "public",
   "images",
   "static",
+  // Top-level tool pages. A rider slug must never shadow them.
+  "fit",
+  "coach",
 ]);
 
 export function isReservedSlug(slug: string): boolean {

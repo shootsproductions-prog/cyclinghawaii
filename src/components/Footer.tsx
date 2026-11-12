@@ -4,6 +4,8 @@ const FOOTER_LINKS = [
   { href: "/rides", label: "Rides", external: false },
   { href: "/log", label: "Dispatch", external: false },
   { href: "/events", label: "Events", external: false },
+  { href: "/fit", label: "Bike Fit", external: false },
+  { href: "/coach", label: "Coach", external: false },
   { href: "/about", label: "About", external: false },
   { href: "/live", label: "Live Tracker", external: false },
   { href: "https://instagram.com/cyclinghawaii", label: "Instagram", external: true },
