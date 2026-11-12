@@ -24,8 +24,27 @@ import type { CoachRead } from "./types";
  */
 export const COACH_MODEL = process.env.COACH_MODEL || "claude-opus-5-5";
 
+/**
+ * Who may ask for the AI read. Every read is billed to the site's
+ * Anthropic key, and that key is already set for Laura's writing, so
+ * the coach does not switch itself on just because the key exists.
+ * COACH_AI decides:
+ *
+ *   COACH_AI=owner       only the site owner
+ *   COACH_AI=signed-in   the owner and any signed-in visitor
+ *
+ * Anything else, or no ANTHROPIC_API_KEY, means off.
+ */
+export type CoachAiAudience = "off" | "owner" | "signed-in";
+
+export function coachAiAudience(): CoachAiAudience {
+  if (!process.env.ANTHROPIC_API_KEY) return "off";
+  const mode = (process.env.COACH_AI ?? "").trim().toLowerCase();
+  return mode === "owner" || mode === "signed-in" ? mode : "off";
+}
+
 export function coachAiConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
+  return coachAiAudience() !== "off";
 }
 
 const SYSTEM = `You are the cycling coach on cyclinghawaii.com, a personal cycling journal for Hawaii. Riders here do road and gravel on Maui and the other islands: long climbs, trade winds, heat, and a lot of riding alone. They range from keen beginners to experienced amateurs.

@@ -4,14 +4,16 @@
 //   POST  { summary, password? }  ->  { read }  or an error the page
 //         answers by keeping its rules-based read.
 //
-// Only identified callers reach the model (see lib/coach/access.ts):
-// the site owner, or a signed-in visitor. Anonymous visitors get the
+// Only identified callers reach the model (see lib/coach/access.ts),
+// and only once COACH_AI switches it on: "owner" for the site owner
+// alone, "signed-in" to add signed-in visitors. Everyone else gets the
 // rules-based read, which is computed in their browser. That keeps the
-// Anthropic bill tied to people who can be counted.
+// Anthropic bill a decision the owner made, tied to people who can be
+// counted.
 
 import { NextResponse } from "next/server";
 import { identify } from "@/lib/coach/access";
-import { claudeRead, coachAiConfigured } from "@/lib/coach/claude";
+import { claudeRead, coachAiAudience, coachAiConfigured } from "@/lib/coach/claude";
 import { passwordAttemptAllowed, rateLimit } from "@/lib/coach/rate-limit";
 import { sanitizeSummary } from "@/lib/coach/summary";
 
@@ -29,7 +31,12 @@ function reply(body: unknown, status = 200) {
 }
 
 export async function GET() {
-  return reply({ configured: coachAiConfigured() });
+  const audience = coachAiAudience();
+  // In owner-only mode the page hides the button from everyone else.
+  // A session can prove ownership here; the admin password is only
+  // ever checked on POST.
+  const owner = audience === "owner" ? (await identify())?.kind === "owner" : false;
+  return reply({ configured: audience !== "off", audience, owner });
 }
 
 export async function POST(request: Request) {
@@ -49,6 +56,9 @@ export async function POST(request: Request) {
   }
   const who = await identify(body?.password);
   if (!who) return reply({ error: "sign-in" }, 401);
+  if (coachAiAudience() === "owner" && who.kind !== "owner") {
+    return reply({ error: "owner-only" }, 403);
+  }
 
   const summary = sanitizeSummary(body?.summary);
   if (!summary) return reply({ error: "bad-request" }, 400);

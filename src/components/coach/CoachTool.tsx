@@ -62,6 +62,7 @@ const AI_ERRORS: Record<string, string> = {
   "slow-down": "That is enough AI reads for now. The read only changes when your rides do. Try again in an hour.",
   "rate-limited": "The AI coach is busy. Try again in a minute.",
   "not-configured": "The AI read is not switched on for this site.",
+  "owner-only": "The AI read is switched on for the site owner only. The read below is the built-in one and does not need it.",
 };
 
 const KIND_TONE: Record<SessionKind, string> = {
@@ -242,7 +243,10 @@ export default function CoachTool() {
   const [importNote, setImportNote] = useState<{ tone: "good" | "warn" | "bad"; text: string } | null>(null);
   const [stravaState, setStravaState] = useState<{ busy: boolean; error: string | null; needPassword: boolean }>({ busy: false, error: null, needPassword: false });
   const [password, setPassword] = useState("");
-  const [aiConfigured, setAiConfigured] = useState(false);
+  const [aiSwitch, setAiSwitch] = useState<{ configured: boolean; ownerOnly: boolean; owner: boolean }>({ configured: false, ownerOnly: false, owner: false });
+  // In owner-only mode the button is offered once ownership is plausible:
+  // a session that proved it, or an admin password to send along.
+  const aiConfigured = aiSwitch.configured && (!aiSwitch.ownerOnly || aiSwitch.owner || password.length > 0);
   const [ai, setAi] = useState<{ busy: boolean; error: string | null; needsSignIn?: boolean; read: CoachRead | null; forKey: string | null }>({ busy: false, error: null, read: null, forKey: null });
   const [showAi, setShowAi] = useState(true);
 
@@ -278,7 +282,13 @@ export default function CoachTool() {
     fetch("/api/coach/read", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!cancelled) setAiConfigured(data?.configured === true);
+        if (!cancelled) {
+          setAiSwitch({
+            configured: data?.configured === true,
+            ownerOnly: data?.audience === "owner",
+            owner: data?.owner === true,
+          });
+        }
       })
       .catch(() => {});
     return () => {
