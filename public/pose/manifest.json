@@ -1,0 +1,7 @@
+{
+  "package": "@mediapipe/tasks-vision",
+  "version": "1.1.1",
+  "model": "pose_landmarker_full.task",
+  "modelSha256": "4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad",
+  "wasmSha256": "0e101a010e262ef8e78f22e3c95b60a9705fd06962753c9acd6356d9fb56b7bd"
+}
