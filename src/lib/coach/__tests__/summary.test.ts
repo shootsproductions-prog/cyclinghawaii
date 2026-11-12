@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { analyzeRides } from "../analysis";
-import { rateLimit } from "../rate-limit";
+import { clientAddress, passwordAttemptAllowed, rateLimit } from "../rate-limit";
 import { rulesRead } from "../rules";
 import { sampleRides } from "../sample";
 import { fetchStravaRides, stravaToRide } from "../strava";
@@ -261,5 +261,16 @@ describe("rate limit", () => {
     expect(rateLimit(key, 2, 1000, t0 + 20)).toBe(false);
     expect(rateLimit(`${key}-other`, 2, 1000, t0 + 20)).toBe(true);
     expect(rateLimit(key, 2, 1000, t0 + 1005)).toBe(true);
+  });
+
+  it("caps password guesses per caller address", () => {
+    const from = (ip: string) =>
+      new Request("https://example.test/api", { headers: { "x-forwarded-for": `${ip}, 10.0.0.1` } });
+    const ip = `203.0.113.${Math.floor(Math.random() * 200)}`;
+    expect(clientAddress(from(ip))).toBe(ip);
+    expect(clientAddress(new Request("https://example.test/api"))).toBe("unknown");
+    for (let i = 0; i < 12; i++) expect(passwordAttemptAllowed(from(ip))).toBe(true);
+    expect(passwordAttemptAllowed(from(ip))).toBe(false);
+    expect(passwordAttemptAllowed(from("198.51.100.7"))).toBe(true);
   });
 });

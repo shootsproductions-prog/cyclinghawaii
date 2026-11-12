@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { identify } from "@/lib/coach/access";
+import { passwordAttemptAllowed } from "@/lib/coach/rate-limit";
 import { fetchStravaRides } from "@/lib/coach/strava";
 import { getRiderByAthleteId, saveRider, type Rider } from "@/lib/rider-store";
 import { getAccessToken } from "@/lib/strava";
@@ -40,6 +41,9 @@ export async function POST(request: Request) {
     // An empty body is fine: the caller may be relying on their session.
   }
 
+  if (password !== undefined && !passwordAttemptAllowed(request)) {
+    return reply({ error: "slow-down" }, 429);
+  }
   const who = await identify(password);
   if (!who) return reply({ error: "sign-in" }, 401);
 

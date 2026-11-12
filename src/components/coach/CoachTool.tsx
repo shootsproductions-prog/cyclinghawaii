@@ -54,6 +54,7 @@ const STRAVA_ERRORS: Record<string, string> = {
   "no-strava": "Your sign-in is not a Strava account, so there are no rides to load. Import ride files instead.",
   "not-configured": "Strava is not set up on this server yet.",
   "strava-unavailable": "Strava did not answer. Try again in a few minutes.",
+  "slow-down": "Too many password attempts. Wait ten minutes and try again.",
 };
 
 const AI_ERRORS: Record<string, string> = {

@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 import { identify } from "@/lib/coach/access";
 import { claudeRead, coachAiConfigured } from "@/lib/coach/claude";
-import { rateLimit } from "@/lib/coach/rate-limit";
+import { passwordAttemptAllowed, rateLimit } from "@/lib/coach/rate-limit";
 import { sanitizeSummary } from "@/lib/coach/summary";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +44,9 @@ export async function POST(request: Request) {
     return reply({ error: "bad-request" }, 400);
   }
 
+  if (body?.password !== undefined && !passwordAttemptAllowed(request)) {
+    return reply({ error: "slow-down" }, 429);
+  }
   const who = await identify(body?.password);
   if (!who) return reply({ error: "sign-in" }, 401);
 
