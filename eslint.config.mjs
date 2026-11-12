@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored pose-detection runtime for /fit (see scripts/sync-pose-assets.mjs).
+    "public/pose/**",
+    // macOS AppleDouble junk files that are tracked in this repo. They
+    // are binary, so every one of them fails to parse.
+    "**/._*",
   ]),
 ]);
 
